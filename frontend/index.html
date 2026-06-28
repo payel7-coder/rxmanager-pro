@@ -369,11 +369,11 @@ tr:hover td { background: rgba(0,180,166,0.03); }
 /* ===== SEARCH AUTOCOMPLETE ===== */
 .autocomplete { position: relative; }
 .autocomplete-dropdown {
-  position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
-  background: var(--surface2); border: 1px solid var(--border);
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 9999;
+  background: var(--surface2); border: 1px solid var(--teal);
   border-radius: 7px; margin-top: 4px;
-  max-height: 200px; overflow-y: auto;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  max-height: 260px; overflow-y: auto;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.6);
 }
 .autocomplete-item {
   padding: 9px 12px; cursor: pointer;
@@ -903,14 +903,16 @@ tr:hover td { background: rgba(0,180,166,0.03); }
         <!-- PATIENT SELECT -->
         <div class="card" style="margin-bottom:16px" v-if="!rxForm.patient">
           <div class="card-title" style="margin-bottom:14px"><i class="fa-solid fa-user"></i> Select Patient</div>
-          <div class="search-box">
-            <i class="fa-solid fa-search"></i>
-            <input class="form-control" v-model="patientSearchRx" placeholder="Search patient by name, ID or phone..." @input="searchPatientsRx">
-          </div>
-          <div class="autocomplete-dropdown" v-if="patientSearchResults.length">
-            <div class="autocomplete-item" v-for="p in patientSearchResults" :key="p.id" @click="selectPatientForRx(p)">
-              <div style="font-weight:600">{{p.name}}</div>
-              <div class="item-sub">{{p.patient_id}} · {{p.age}} {{p.age_unit}} · {{p.gender==='M'?'Male':'Female'}} · {{p.blood_group}}</div>
+          <div style="position:relative;">
+            <div class="search-box">
+              <i class="fa-solid fa-search"></i>
+              <input class="form-control" v-model="patientSearchRx" placeholder="Search patient by name, ID or phone..." @input="searchPatientsRx" @blur="closePatientDropdown" autocomplete="off">
+            </div>
+            <div class="autocomplete-dropdown" v-if="patientSearchResults.length">
+              <div class="autocomplete-item" v-for="p in patientSearchResults" :key="p.id" @click="selectPatientForRx(p)">
+                <div style="font-weight:600">{{p.name}}</div>
+                <div class="item-sub">{{p.patient_id}} · {{p.age}} {{p.age_unit}} · {{p.gender==='M'?'Male':'Female'}} · {{p.blood_group}}</div>
+              </div>
             </div>
           </div>
           <div style="margin-top:12px;color:var(--muted);font-size:0.82rem">
@@ -939,12 +941,12 @@ tr:hover td { background: rgba(0,180,166,0.03); }
               <button class="pill" :class="{active:loadedTemplateId===t.id}" v-for="t in templates.slice(0,8)" :key="t.id" @click="loadTemplate(t)">{{t.name}}</button>
               <button class="btn btn-ghost btn-sm" @click="showTemplateSearch=!showTemplateSearch"><i class="fa-solid fa-search"></i> More</button>
             </div>
-            <div v-if="showTemplateSearch" style="margin-top:8px">
+            <div v-if="showTemplateSearch" style="margin-top:8px;position:relative;">
               <div class="search-box">
                 <i class="fa-solid fa-search"></i>
-                <input class="form-control" v-model="templateSearchRx" placeholder="Search templates..." @input="searchTemplatesRx">
+                <input class="form-control" v-model="templateSearchRx" placeholder="Search templates..." @input="searchTemplatesRx" autocomplete="off">
               </div>
-              <div class="autocomplete-dropdown" v-if="templateSearchResults.length" style="position:relative;margin-top:4px">
+              <div class="autocomplete-dropdown" v-if="templateSearchResults.length">
                 <div class="autocomplete-item" v-for="t in templateSearchResults" :key="t.id" @click="loadTemplate(t);showTemplateSearch=false">
                   <div style="font-weight:600">{{t.name}}</div>
                   <div class="item-sub">{{t.disease}} · {{t.medicines.length}} medicines</div>
@@ -1371,7 +1373,7 @@ tr:hover td { background: rgba(0,180,166,0.03); }
 </div>
 
 <script>
-const API = 'http://localhost:8000/api';
+const API = 'https://rxmanager-pro-production.up.railway.app/api';
 
 const {createApp, ref, computed, onMounted, watch} = Vue;
 
@@ -1635,6 +1637,11 @@ createApp({
           patientSearchResults.value = d.results || d;
         } catch {}
       }, 300);
+    }
+
+    function closePatientDropdown() {
+      // Delay so click on item fires first
+      setTimeout(() => { patientSearchResults.value = []; }, 200);
     }
 
     function selectPatientForRx(p) {
@@ -1977,7 +1984,7 @@ createApp({
       loadPrescriptions, searchPrescriptions, startNewPrescription,
       rxForm, patientSearchRx, patientSearchResults, templateSearchRx, templateSearchResults,
       showTemplateSearch, loadedTemplateId, frequencies, timings,
-      searchPatientsRx, selectPatientForRx, searchTemplatesRx, clearPatient,
+      searchPatientsRx, selectPatientForRx, closePatientDropdown, searchTemplatesRx, clearPatient,
       loadTemplate, addMedicineLine, searchMedForLine, selectMedForLine, closeMedDropdown,
       savePrescription, editPrescription, openPatientPrescription,
       templates, templateSearch, selectedDisease, diseases,
