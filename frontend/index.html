@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RxManager Pro — Doctor Prescription System</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<style>
+:root {
+  --navy: #0B1628;
+  --navy2: #152240;
+  --teal: #00B4A6;
+  --teal-light: #00D4C4;
+  --gold: #E8B84B;
+  --white: #F8FAFC;
+  --muted: #8A9BB5;
+  --surface: #162035;
+  --surface2: #1E2D45;
+  --border: rgba(0,180,166,0.15);
+  --success: #22C55E;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  --info: #3B82F6;
+  --text: #E2EAF4;
+  --text-muted: #8A9BB5;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 14px; }
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--navy);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+/* ===== LAYOUT ===== */
+.app-layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  background: var(--navy2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0;
+  height: 100vh; z-index: 100;
+  transition: width 0.3s ease;
+}
+.sidebar.collapsed { width: 64px; }
+.main-content {
+  margin-left: 240px;
+  flex: 1; min-height: 100vh;
+  transition: margin-left 0.3s ease;
+}
+.main-content.collapsed { margin-left: 64px; }
+/* ===== SIDEBAR ===== */
+.sidebar-logo {
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon {
+  width: 36px; height: 36px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: white;
+}
+.logo-text { overflow: hidden; white-space: nowrap; }
+.logo-text h2 {
+  font-family: 'Merriweather', serif;
+  font-size: 1.1rem; color: var(--teal);
+  letter-spacing: 0.5px;
+}
+.logo-text p { font-size: 0.72rem; color: var(--muted); }
+.sidebar-nav { flex: 1; padding: 12px 8px; overflow-y: auto; }
+.nav-section-label {
+  font-size: 0.68rem; color: var(--muted);
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 12px 10px 6px;
+  overflow: hidden; white-space: nowrap;
+}
+.collapsed .nav-section-label { opacity: 0; height: 0; padding: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 8px;
+  cursor: pointer; color: var(--text-muted);
+  font-size: 0.88rem; font-weight: 500;
+  transition: all 0.2s;
+  margin-bottom: 2px;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.nav-item i { font-size: 1rem; min-width: 20px; text-align: center; flex-shrink: 0; }
+.nav-item:hover { background: var(--surface); color: var(--text); }
+.nav-item.active { background: linear-gradient(135deg, rgba(0,180,166,0.2), rgba(0,180,166,0.1)); color: var(--teal); border-left: 3px solid var(--teal); padding-left: 7px; }
+.nav-item .badge { margin-left: auto; background: var(--teal); color: white; border-radius: 12px; padding: 1px 7px; font-size: 0.7rem; flex-shrink: 0; }
+.sidebar-footer {
+  padding: 12px 8px;
+  border-top: 1px solid var(--border);
+}
+.collapse-btn {
+  width: 100%; padding: 8px;
+  background: none; border: none;
+  color: var(--muted); cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 0.82rem;
+}
+.collapse-btn:hover { background: var(--surface); color: var(--text); }
+/* ===== TOPBAR ===== */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex; align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+.topbar-title { font-family: 'Merriweather', serif; font-size: 1.2rem; font-weight: 400; }
+.topbar-subtitle { font-size: 0.78rem; color: var(--muted); margin-top: 1px; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 8px 16px; border-radius: 7px;
+  font-size: 0.84rem; font-weight: 500;
+  cursor: pointer; border: none;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.2s;
+  font-family: 'IBM Plex Sans', sans-serif;
+  text-decoration: none;
+}
+.btn-primary { background: var(--teal); color: white; }
+.btn-primary:hover { background: var(--teal-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,180,166,0.3); }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--surface); border-color: var(--teal); }
+.btn-danger { background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+.btn-danger:hover { background: var(--danger); color: white; }
+.btn-warning { background: rgba(232,184,75,0.1); color: var(--gold); border: 1px solid rgba(232,184,75,0.3); }
+.btn-warning:hover { background: var(--gold); color: var(--navy); }
+.btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+.btn-icon { padding: 6px 10px; }
+.btn-ghost { background: none; color: var(--muted); border: 1px solid transparent; }
+.btn-ghost:hover { border-color: var(--border); color: var(--text); background: var(--surface2); }
+/* ===== PAGE ===== */
+.page { padding: 24px; }
+.page-header { margin-bottom: 24px; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+/* ===== CARDS ===== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.card-title { font-size: 0.92rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.card-title i { color: var(--teal); }
+/* ===== STATS ===== */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: var(--color, var(--teal));
+}
+.stat-number { font-size: 2rem; font-weight: 700; color: var(--color, var(--teal)); font-family: 'IBM Plex Mono', monospace; line-height: 1; margin-bottom: 4px; }
+.stat-label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 2.5rem; opacity: 0.08; color: var(--color, var(--teal)); }
+/* ===== FORM ===== */
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+.form-label.required::after { content: ' *'; color: var(--danger); }
+.form-control {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: 'IBM Plex Sans', sans-serif;
+  transition: all 0.2s;
+}
+.form-control:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,180,166,0.1); }
+.form-control::placeholder { color: var(--muted); }
+select.form-control { cursor: pointer; }
+textarea.form-control { resize: vertical; min-height: 80px; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+/* ===== TABLE ===== */
+.table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th { background: var(--surface2); padding: 10px 14px; text-align: left; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+td { padding: 10px 14px; border-top: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+tr:hover td { background: rgba(0,180,166,0.03); }
+/* ===== BADGE ===== */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 600;
+}
+.badge-teal { background: rgba(0,180,166,0.15); color: var(--teal); }
+.badge-gold { background: rgba(232,184,75,0.15); color: var(--gold); }
+.badge-success { background: rgba(34,197,94,0.15); color: var(--success); }
+.badge-danger { background: rgba(239,68,68,0.15); color: var(--danger); }
+.badge-muted { background: rgba(138,155,181,0.15); color: var(--muted); }
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(11,22,40,0.85);
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%; max-width: 680px;
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+}
+.modal-lg { max-width: 900px; }
+.modal-xl { max-width: 1100px; }
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.modal-title { font-family: 'Merriweather', serif; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+.modal-title i { color: var(--teal); font-size: 1rem; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; }
+.modal-close:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+/* ===== SEARCH ===== */
+.search-box { position: relative; }
+.search-box input { padding-left: 36px; }
+.search-box i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.88rem; }
+/* ===== ALERT ===== */
+.alert {
+  padding: 12px 16px; border-radius: 8px;
+  font-size: 0.85rem; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.alert-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: var(--success); }
+.alert-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--danger); }
+.alert-info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: var(--info); }
+/* ===== MEDICINE TABLE IN FORM ===== */
+.med-table { width: 100%; font-size: 0.82rem; }
+.med-table th { background: var(--navy2); padding: 8px 10px; font-size: 0.72rem; }
+.med-table td { padding: 6px; border-top: 1px solid var(--border); }
+.med-table .form-control { padding: 6px 8px; font-size: 0.82rem; }
+.med-remove-btn { background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s; }
+.med-remove-btn:hover { background: rgba(239,68,68,0.1); }
+/* ===== PRINT ===== */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; color: black; }
+  .print-area { display: block !important; }
+  .sidebar, .topbar { display: none !important; }
+  .main-content { margin-left: 0 !important; }
+}
+.print-area { display: none; }
+/* ===== PRESCRIPTION PRINT ===== */
+.rx-print {
+  font-family: 'IBM Plex Sans', sans-serif;
+  max-width: 800px; margin: 0 auto;
+  background: white; color: #1a1a2e;
+  padding: 0;
+}
+.rx-header {
+  background: linear-gradient(135deg, #0B1628, #152240);
+  color: white;
+  padding: 20px 30px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.rx-doctor-name { font-size: 1.4rem; font-weight: 700; font-family: 'Merriweather', serif; color: #00B4A6; }
+.rx-doctor-qual { font-size: 0.85rem; opacity: 0.8; margin: 2px 0; }
+.rx-clinic-info { text-align: right; font-size: 0.78rem; opacity: 0.8; }
+.rx-clinic-name { font-size: 1rem; font-weight: 600; color: #E8B84B; margin-bottom: 3px; }
+.rx-separator { height: 3px; background: linear-gradient(90deg, #00B4A6, #E8B84B, #00B4A6); }
+.rx-patient-info {
+  padding: 14px 30px;
+  background: #f8fafc;
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px; border-bottom: 1px solid #e2e8f0;
+}
+.rx-info-item { font-size: 0.82rem; }
+.rx-info-label { color: #6b7280; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.rx-info-value { font-weight: 600; color: #1a1a2e; }
+.rx-body { padding: 20px 30px; }
+.rx-vitals {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  padding: 10px 14px; background: #f0fdf8; border-radius: 8px;
+  border-left: 3px solid #00B4A6; margin-bottom: 16px; font-size: 0.82rem;
+}
+.rx-vital-item { display: flex; align-items: center; gap: 5px; }
+.rx-vital-label { color: #6b7280; }
+.rx-vital-value { font-weight: 600; }
+.rx-section-title {
+  font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px;
+  color: #00B4A6; font-weight: 700; margin-bottom: 8px;
+  padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;
+}
+.rx-dx { margin-bottom: 14px; }
+.rx-dx p { font-size: 0.9rem; font-weight: 500; }
+.rx-sign {
+  font-size: 2rem; color: #0B1628;
+  font-family: 'Merriweather', serif;
+  display: flex; align-items: center; gap: 5px;
+}
+.rx-medicines { margin-bottom: 14px; }
+.rx-med-list { list-style: none; }
+.rx-med-item {
+  display: flex; align-items: baseline;
+  padding: 8px 0; border-bottom: 1px dashed #e2e8f0;
+  gap: 12px;
+}
+.rx-med-num { font-size: 0.78rem; color: #00B4A6; font-weight: 700; min-width: 20px; }
+.rx-med-name { font-weight: 600; font-size: 0.92rem; flex: 1; }
+.rx-med-details { font-size: 0.8rem; color: #4b5563; }
+.rx-advice { margin-bottom: 14px; font-size: 0.85rem; color: #374151; }
+.rx-footer {
+  padding: 14px 30px;
+  display: flex; justify-content: space-between; align-items: flex-end;
+  border-top: 1px solid #e2e8f0; background: #f8fafc;
+}
+.rx-followup { font-size: 0.82rem; color: #374151; }
+.rx-signature { text-align: right; }
+.rx-sig-line { width: 150px; border-top: 1px solid #374151; margin-top: 40px; font-size: 0.75rem; color: #6b7280; text-align: center; }
+/* ===== TABS ===== */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tab-btn { padding: 10px 18px; background: none; border: none; cursor: pointer; color: var(--muted); font-size: 0.85rem; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; font-family: 'IBM Plex Sans', sans-serif; }
+.tab-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
+.tab-btn:hover:not(.active) { color: var(--text); }
+/* ===== TEMPLATE CARD ===== */
+.template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.template-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative; overflow: hidden;
+}
+.template-card:hover { border-color: var(--teal); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,180,166,0.15); }
+.template-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--teal), var(--gold)); }
+.template-name { font-weight: 600; margin-bottom: 4px; }
+.template-disease { color: var(--teal); font-size: 0.82rem; margin-bottom: 10px; }
+.template-meta { font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 12px; }
+.template-actions { margin-top: 12px; display: flex; gap: 6px; }
+/* ===== EMPTY STATE ===== */
+.empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
+.empty-state i { font-size: 3rem; margin-bottom: 12px; opacity: 0.3; }
+.empty-state h3 { font-size: 1rem; margin-bottom: 6px; color: var(--text); }
+.empty-state p { font-size: 0.85rem; }
+/* ===== SEARCH AUTOCOMPLETE ===== */
+.autocomplete { position: relative; }
+.autocomplete-dropdown {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 7px; margin-top: 4px;
+  max-height: 200px; overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.autocomplete-item {
+  padding: 9px 12px; cursor: pointer;
+  font-size: 0.85rem; transition: all 0.15s;
+  border-bottom: 1px solid var(--border);
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover { background: rgba(0,180,166,0.1); color: var(--teal); }
+.autocomplete-item .item-sub { font-size: 0.72rem; color: var(--muted); }
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+/* ===== LOADING ===== */
+.spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(0,180,166,0.2); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+/* ===== TOAST ===== */
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 18px;
+  font-size: 0.85rem; display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: slide-in 0.3s ease;
+  min-width: 260px; max-width: 360px;
+}
+.toast.success { border-left: 3px solid var(--success); }
+.toast.error { border-left: 3px solid var(--danger); }
+.toast.info { border-left: 3px solid var(--info); }
+@keyframes slide-in { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+/* ===== PILLS ===== */
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; border: 1px solid var(--border); color: var(--muted); transition: all 0.2s; background: none; font-family: 'IBM Plex Sans', sans-serif; }
+.pill:hover, .pill.active { background: rgba(0,180,166,0.15); border-color: var(--teal); color: var(--teal); }
+/* ===== PAGINATION ===== */
+.pagination { display: flex; align-items: center; gap: 6px; justify-content: center; margin-top: 16px; }
+.page-btn { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; font-size: 0.82rem; transition: all 0.2s; font-family: 'IBM Plex Sans', sans-serif; }
+.page-btn.active { background: var(--teal); border-color: var(--teal); color: white; }
+.page-btn:hover:not(.active) { border-color: var(--teal); color: var(--teal); }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="app-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" :class="{collapsed: sidebarCollapsed}">
+      <div class="sidebar-logo">
+        <div class="logo-icon"><i class="fa-solid fa-kit-medical"></i></div>
+        <div class="logo-text" v-show="!sidebarCollapsed">
+          <h2>RxManager</h2>
+          <p>Pro Edition</p>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Main</div>
+        <a class="nav-item" :class="{active: currentPage==='dashboard'}" @click="currentPage='dashboard'">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span v-show="!sidebarCollapsed">Dashboard</span>
+        </a>
+        <div class="nav-section-label">Patients</div>
+        <a class="nav-item" :class="{active: currentPage==='patients'}" @click="currentPage='patients'">
+          <i class="fa-solid fa-users"></i>
+          <span v-show="!sidebarCollapsed">All Patients</span>
+          <span class="badge" v-if="!sidebarCollapsed && stats.total_patients">{{stats.total_patients}}</span>
+        </a>
+        <a class="nav-item" :class="{active: currentPage==='new-patient'}" @click="currentPage='new-patient'">
+          <i class="fa-solid fa-user-plus"></i>
+          <span v-show="!sidebarCollapsed">Register Patient</span>
+        </a>
+        <div class="nav-section-label">Prescriptions</div>
+        <a class="nav-item" :class="{active: currentPage==='new-prescription'}" @click="startNewPrescription">
+          <i class="fa-solid fa-file-prescription"></i>
+          <span v-show="!sidebarCollapsed">New Prescription</span>
+        </a>
+        <a class="nav-item" :class="{active: currentPage==='prescriptions'}" @click="currentPage='prescriptions'">
+          <i class="fa-solid fa-clipboard-list"></i>
+          <span v-show="!sidebarCollapsed">All Prescriptions</span>
+        </a>
+        <div class="nav-section-label">Templates</div>
+        <a class="nav-item" :class="{active: currentPage==='templates'}" @click="currentPage='templates'">
+          <i class="fa-solid fa-layer-group"></i>
+          <span v-show="!sidebarCollapsed">Templates</span>
+          <span class="badge" v-if="!sidebarCollapsed && stats.total_templates">{{stats.total_templates}}</span>
+        </a>
+        <div class="nav-section-label">Settings</div>
+        <a class="nav-item" :class="{active: currentPage==='medicines'}" @click="currentPage='medicines'">
+          <i class="fa-solid fa-pills"></i>
+          <span v-show="!sidebarCollapsed">Medicine List</span>
+        </a>
+        <a class="nav-item" :class="{active: currentPage==='settings'}" @click="currentPage='settings'">
+          <i class="fa-solid fa-gear"></i>
+          <span v-show="!sidebarCollapsed">Doctor Profile</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+          <i :class="sidebarCollapsed ? 'fa-solid fa-angles-right' : 'fa-solid fa-angles-left'"></i>
+          <span v-show="!sidebarCollapsed">Collapse</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content" :class="{collapsed: sidebarCollapsed}">
+      <!-- TOPBAR -->
+      <div class="topbar no-print">
+        <div>
+          <div class="topbar-title">{{pageTitle}}</div>
+          <div class="topbar-subtitle">{{new Date().toLocaleDateString('en-BD', {weekday:'long', year:'numeric', month:'long', day:'numeric'})}}</div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-primary" @click="startNewPrescription">
+            <i class="fa-solid fa-plus"></i> New Prescription
+          </button>
+          <div v-if="doctor" style="display:flex;align-items:center;gap:8px;margin-left:8px;">
+            <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;color:white">
+              {{doctor.name ? doctor.name[0] : 'D'}}
+            </div>
+            <div style="font-size:0.8rem;">
+              <div style="font-weight:600;">Dr. {{doctor.name}}</div>
+              <div style="color:var(--muted);font-size:0.72rem;">{{doctor.specialization}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== DASHBOARD =========== -->
+      <div class="page" v-if="currentPage==='dashboard'">
+        <div class="stats-grid">
+          <div class="stat-card" style="--color:var(--teal)">
+            <div class="stat-number">{{stats.total_patients}}</div>
+            <div class="stat-label">Total Patients</div>
+            <i class="fa-solid fa-users stat-icon"></i>
+          </div>
+          <div class="stat-card" style="--color:var(--gold)">
+            <div class="stat-number">{{stats.today_prescriptions}}</div>
+            <div class="stat-label">Today's Prescriptions</div>
+            <i class="fa-solid fa-file-prescription stat-icon"></i>
+          </div>
+          <div class="stat-card" style="--color:#8B5CF6">
+            <div class="stat-number">{{stats.month_prescriptions}}</div>
+            <div class="stat-label">This Month</div>
+            <i class="fa-solid fa-calendar stat-icon"></i>
+          </div>
+          <div class="stat-card" style="--color:var(--success)">
+            <div class="stat-number">{{stats.total_templates}}</div>
+            <div class="stat-label">Active Templates</div>
+            <i class="fa-solid fa-layer-group stat-icon"></i>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="fa-solid fa-users"></i> Recent Patients</div>
+              <button class="btn btn-ghost btn-sm" @click="currentPage='patients'">View All</button>
+            </div>
+            <div v-if="stats.recent_patients && stats.recent_patients.length">
+              <div v-for="p in stats.recent_patients" :key="p.id" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+                <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--navy));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:0.85rem;flex-shrink:0">{{p.name[0]}}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-weight:600;font-size:0.88rem">{{p.name}}</div>
+                  <div style="font-size:0.74rem;color:var(--muted)">{{p.patient_id}} · {{p.age}} yrs · {{p.gender==='M'?'Male':'Female'}}</div>
+                </div>
+                <button class="btn btn-ghost btn-sm" @click="openPatientPrescription(p)"><i class="fa-solid fa-file-prescription"></i></button>
+              </div>
+            </div>
+            <div class="empty-state" v-else><i class="fa-solid fa-users"></i><p>No patients yet</p></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="fa-solid fa-clock"></i> Recent Prescriptions</div>
+              <button class="btn btn-ghost btn-sm" @click="currentPage='prescriptions'">View All</button>
+            </div>
+            <div v-if="stats.recent_prescriptions && stats.recent_prescriptions.length">
+              <div v-for="rx in stats.recent_prescriptions" :key="rx.id" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+                <div style="flex:1;min-width:0">
+                  <div style="font-weight:600;font-size:0.88rem">{{rx.patient_name}}</div>
+                  <div style="font-size:0.74rem;color:var(--muted)">{{rx.prescription_no}} · {{rx.diagnosis}}</div>
+                </div>
+                <span class="badge badge-teal">{{rx.visit_date}}</span>
+                <button class="btn btn-ghost btn-sm" @click="printPrescription(rx.id)"><i class="fa-solid fa-print"></i></button>
+              </div>
+            </div>
+            <div class="empty-state" v-else><i class="fa-solid fa-clipboard-list"></i><p>No prescriptions yet</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== PATIENTS =========== -->
+      <div class="page" v-if="currentPage==='patients'">
+        <div class="page-header">
+          <div>
+            <h2 style="font-family:'Merriweather',serif;font-weight:400">Patient Registry</h2>
+            <p style="color:var(--muted);font-size:0.82rem;margin-top:3px">{{patientTotal}} patients registered</p>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div class="search-box">
+              <i class="fa-solid fa-search"></i>
+              <input class="form-control" v-model="patientSearch" placeholder="Search name, ID, phone..." @input="searchPatients" style="width:240px">
+            </div>
+            <button class="btn btn-primary" @click="currentPage='new-patient'"><i class="fa-solid fa-user-plus"></i> Register</button>
+          </div>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-container" style="border:none">
+            <table>
+              <thead><tr><th>Patient ID</th><th>Name</th><th>Age/Gender</th><th>Blood</th><th>Phone</th><th>Prescriptions</th><th>Registered</th><th>Actions</th></tr></thead>
+              <tbody>
+                <tr v-for="p in patients" :key="p.id">
+                  <td><span class="badge badge-teal">{{p.patient_id}}</span></td>
+                  <td style="font-weight:600">{{p.name}}</td>
+                  <td>{{p.age}} {{p.age_unit}} / {{p.gender==='M'?'♂ Male':p.gender==='F'?'♀ Female':'Other'}}</td>
+                  <td><span class="badge badge-gold">{{p.blood_group}}</span></td>
+                  <td style="color:var(--muted)">{{p.phone||'—'}}</td>
+                  <td><span class="badge badge-muted">{{p.total_prescriptions||0}} Rx</span></td>
+                  <td style="color:var(--muted);font-size:0.8rem">{{formatDate(p.created_at)}}</td>
+                  <td>
+                    <div style="display:flex;gap:4px">
+                      <button class="btn btn-sm btn-primary" @click="openPatientPrescription(p)" title="New Prescription"><i class="fa-solid fa-file-prescription"></i></button>
+                      <button class="btn btn-sm btn-secondary" @click="editPatient(p)" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                      <button class="btn btn-sm btn-ghost" @click="viewPatientHistory(p)" title="History"><i class="fa-solid fa-history"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="empty-state" v-if="!patients.length"><i class="fa-solid fa-users"></i><h3>No patients found</h3><p>Register your first patient to get started</p></div>
+          </div>
+          <div style="padding:12px 16px;border-top:1px solid var(--border)" v-if="patientTotal > 20">
+            <div class="pagination">
+              <button class="page-btn" :disabled="patientPage<=1" @click="patientPage--;loadPatients()">‹ Prev</button>
+              <span style="font-size:0.82rem;color:var(--muted)">Page {{patientPage}}</span>
+              <button class="page-btn" :disabled="patients.length < 20" @click="patientPage++;loadPatients()">Next ›</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== NEW / EDIT PATIENT =========== -->
+      <div class="page" v-if="currentPage==='new-patient'">
+        <div class="page-header">
+          <div>
+            <h2 style="font-family:'Merriweather',serif;font-weight:400">{{editingPatient ? 'Edit Patient' : 'Register New Patient'}}</h2>
+            <p style="color:var(--muted);font-size:0.82rem;margin-top:3px">{{editingPatient ? 'Update patient information' : 'Add a new patient to the registry'}}</p>
+          </div>
+          <button class="btn btn-ghost" @click="currentPage='patients'"><i class="fa-solid fa-arrow-left"></i> Back</button>
+        </div>
+        <div style="max-width:700px">
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title" style="margin-bottom:16px"><i class="fa-solid fa-user"></i> Personal Information</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label required">Full Name</label>
+                <input class="form-control" v-model="patientForm.name" placeholder="Patient full name">
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Age</label>
+                <div style="display:flex;gap:6px">
+                  <input class="form-control" v-model="patientForm.age" type="number" min="0" max="150" placeholder="Age" style="flex:1">
+                  <select class="form-control" v-model="patientForm.age_unit" style="width:100px">
+                    <option>Years</option><option>Months</option><option>Days</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label required">Gender</label>
+                <select class="form-control" v-model="patientForm.gender">
+                  <option value="M">Male</option><option value="F">Female</option><option value="O">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Blood Group</label>
+                <select class="form-control" v-model="patientForm.blood_group">
+                  <option v-for="b in ['A+','A-','B+','B-','AB+','AB-','O+','O-','Unknown']" :value="b">{{b}}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone</label>
+                <input class="form-control" v-model="patientForm.phone" placeholder="+880...">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input class="form-control" v-model="patientForm.email" type="email" placeholder="Optional">
+              </div>
+              <div class="form-group" style="grid-column:1/-1">
+                <label class="form-label">Address</label>
+                <input class="form-control" v-model="patientForm.address" placeholder="Full address">
+              </div>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title" style="margin-bottom:16px"><i class="fa-solid fa-notes-medical"></i> Medical Information</div>
+            <div class="form-group">
+              <label class="form-label">Known Allergies</label>
+              <input class="form-control" v-model="patientForm.allergies" placeholder="e.g., Penicillin, Sulfa drugs">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Medical History / Chronic Conditions</label>
+              <textarea class="form-control" v-model="patientForm.medical_history" placeholder="e.g., Hypertension, Diabetes, Previous surgeries..." rows="3"></textarea>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-primary" @click="savePatient" :disabled="saving">
+              <span v-if="saving" class="spinner"></span>
+              <i v-else class="fa-solid fa-save"></i>
+              {{editingPatient ? 'Update Patient' : 'Register Patient'}}
+            </button>
+            <button class="btn btn-secondary" @click="resetPatientForm;currentPage='patients'">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== PRESCRIPTIONS LIST =========== -->
+      <div class="page" v-if="currentPage==='prescriptions'">
+        <div class="page-header">
+          <div>
+            <h2 style="font-family:'Merriweather',serif;font-weight:400">Prescriptions</h2>
+            <p style="color:var(--muted);font-size:0.82rem;margin-top:3px">{{prescriptionTotal}} total records</p>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div class="search-box">
+              <i class="fa-solid fa-search"></i>
+              <input class="form-control" v-model="rxSearch" placeholder="Search Rx#, patient, diagnosis..." @input="searchPrescriptions" style="width:260px">
+            </div>
+          </div>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-container" style="border:none">
+            <table>
+              <thead><tr><th>Rx No.</th><th>Patient</th><th>Diagnosis</th><th>Date</th><th>Follow-up</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                <tr v-for="rx in prescriptions" :key="rx.id">
+                  <td><span class="badge badge-teal" style="font-family:'IBM Plex Mono'">{{rx.prescription_no}}</span></td>
+                  <td>
+                    <div style="font-weight:600">{{rx.patient_name}}</div>
+                    <div style="font-size:0.74rem;color:var(--muted)">{{rx.patient_id_no}} · {{rx.patient_age}}</div>
+                  </td>
+                  <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{rx.diagnosis}}</td>
+                  <td style="color:var(--muted);font-size:0.82rem">{{rx.visit_date}}</td>
+                  <td style="color:var(--muted);font-size:0.82rem">{{rx.follow_up_date||'—'}}</td>
+                  <td><span class="badge" :class="rx.status==='Final'?'badge-success':'badge-muted'">{{rx.status}}</span></td>
+                  <td>
+                    <div style="display:flex;gap:4px">
+                      <button class="btn btn-sm btn-primary" @click="printPrescription(rx.id)" title="Print"><i class="fa-solid fa-print"></i></button>
+                      <button class="btn btn-sm btn-secondary" @click="editPrescription(rx)" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="empty-state" v-if="!prescriptions.length"><i class="fa-solid fa-file-prescription"></i><h3>No prescriptions found</h3><p>Start by creating a new prescription</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== TEMPLATES =========== -->
+      <div class="page" v-if="currentPage==='templates'">
+        <div class="page-header">
+          <div>
+            <h2 style="font-family:'Merriweather',serif;font-weight:400">Prescription Templates</h2>
+            <p style="color:var(--muted);font-size:0.82rem;margin-top:3px">Save reusable templates by disease</p>
+          </div>
+          <button class="btn btn-primary" @click="openTemplateModal()"><i class="fa-solid fa-plus"></i> New Template</button>
+        </div>
+        <div style="margin-bottom:16px">
+          <div class="search-box" style="display:inline-block;margin-right:10px">
+            <i class="fa-solid fa-search"></i>
+            <input class="form-control" v-model="templateSearch" placeholder="Search templates..." @input="loadTemplates" style="width:240px">
+          </div>
+          <div class="pills" style="display:inline-flex">
+            <button class="pill" :class="{active:!selectedDisease}" @click="selectedDisease='';loadTemplates()">All</button>
+            <button class="pill" v-for="d in diseases" :key="d" :class="{active:selectedDisease===d}" @click="selectedDisease=d;loadTemplates()">{{d}}</button>
+          </div>
+        </div>
+        <div class="template-grid">
+          <div class="template-card" v-for="t in templates" :key="t.id">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div style="flex:1">
+                <div class="template-name">{{t.name}}</div>
+                <div class="template-disease"><i class="fa-solid fa-virus"></i> {{t.disease}}</div>
+                <div class="template-meta">
+                  <span><i class="fa-solid fa-pills"></i> {{t.medicines.length}} medicines</span>
+                  <span><i class="fa-solid fa-chart-bar"></i> Used {{t.usage_count}}×</span>
+                </div>
+                <div class="template-meta" style="margin-top:4px" v-if="t.follow_up_days">
+                  <span><i class="fa-solid fa-calendar-check"></i> Follow-up: {{t.follow_up_days}} days</span>
+                </div>
+              </div>
+            </div>
+            <div class="template-actions">
+              <button class="btn btn-sm btn-primary" @click="useTemplateForPrescription(t)"><i class="fa-solid fa-file-prescription"></i> Use</button>
+              <button class="btn btn-sm btn-secondary" @click="openTemplateModal(t)"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-sm btn-warning" @click="cloneTemplate(t)"><i class="fa-solid fa-clone"></i></button>
+              <button class="btn btn-sm btn-danger" @click="deleteTemplate(t)"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+          <div class="empty-state" style="grid-column:1/-1" v-if="!templates.length">
+            <i class="fa-solid fa-layer-group"></i>
+            <h3>No templates yet</h3>
+            <p>Create your first prescription template</p>
+            <button class="btn btn-primary" style="margin-top:12px" @click="openTemplateModal()">Create Template</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== MEDICINES =========== -->
+      <div class="page" v-if="currentPage==='medicines'">
+        <div class="page-header">
+          <div>
+            <h2 style="font-family:'Merriweather',serif;font-weight:400">Medicine List</h2>
+            <p style="color:var(--muted);font-size:0.82rem;margin-top:3px">{{medicines.length}} medicines in database</p>
+          </div>
+          <button class="btn btn-primary" @click="openMedicineModal()"><i class="fa-solid fa-plus"></i> Add Medicine</button>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <div class="search-box" style="flex:1">
+            <i class="fa-solid fa-search"></i>
+            <input class="form-control" v-model="medSearch" placeholder="Search medicines..." @input="loadMedicines">
+          </div>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-container" style="border:none">
+            <table>
+              <thead><tr><th>Name</th><th>Generic</th><th>Form</th><th>Strength</th><th>Manufacturer</th><th>Actions</th></tr></thead>
+              <tbody>
+                <tr v-for="m in medicines" :key="m.id">
+                  <td style="font-weight:600">{{m.name}}</td>
+                  <td style="color:var(--muted)">{{m.generic_name||'—'}}</td>
+                  <td><span class="badge badge-teal">{{m.form}}</span></td>
+                  <td style="font-family:'IBM Plex Mono'">{{m.strength||'—'}}</td>
+                  <td style="color:var(--muted)">{{m.manufacturer||'—'}}</td>
+                  <td>
+                    <div style="display:flex;gap:4px">
+                      <button class="btn btn-sm btn-secondary" @click="openMedicineModal(m)"><i class="fa-solid fa-pen"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== SETTINGS =========== -->
+      <div class="page" v-if="currentPage==='settings'">
+        <div class="page-header">
+          <div>
+            <h2 style="font-family:'Merriweather',serif;font-weight:400">Doctor Profile</h2>
+            <p style="color:var(--muted);font-size:0.82rem;margin-top:3px">This information appears on prescriptions</p>
+          </div>
+        </div>
+        <div style="max-width:700px">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:16px"><i class="fa-solid fa-user-doctor"></i> Doctor Information</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label required">Full Name</label>
+                <input class="form-control" v-model="doctorForm.name" placeholder="Dr. First Last">
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Registration No.</label>
+                <input class="form-control" v-model="doctorForm.registration_no" placeholder="BMDC-XXXXX">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Qualification</label>
+              <input class="form-control" v-model="doctorForm.qualification" placeholder="MBBS, MD, FCPS...">
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Specialization</label>
+              <input class="form-control" v-model="doctorForm.specialization" placeholder="General Medicine, Cardiology...">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Phone</label>
+                <input class="form-control" v-model="doctorForm.phone" placeholder="+880...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input class="form-control" v-model="doctorForm.email" type="email">
+              </div>
+            </div>
+            <hr style="border-color:var(--border);margin:16px 0">
+            <div class="form-group">
+              <label class="form-label required">Clinic / Hospital Name</label>
+              <input class="form-control" v-model="doctorForm.clinic_name" placeholder="Clinic or hospital name">
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Clinic Address</label>
+              <textarea class="form-control" v-model="doctorForm.clinic_address" placeholder="Full address for prescription header" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Clinic Phone</label>
+              <input class="form-control" v-model="doctorForm.clinic_phone">
+            </div>
+            <button class="btn btn-primary" @click="saveDoctor" :disabled="saving">
+              <span v-if="saving" class="spinner"></span>
+              <i v-else class="fa-solid fa-save"></i> Save Profile
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== NEW PRESCRIPTION =========== -->
+      <div class="page" v-if="currentPage==='new-prescription'">
+        <div class="page-header">
+          <div>
+            <h2 style="font-family:'Merriweather',serif;font-weight:400">{{editingPrescription ? 'Edit Prescription' : 'New Prescription'}}</h2>
+            <p style="color:var(--muted);font-size:0.82rem;margin-top:3px">{{rxForm.patient_name ? 'Patient: '+rxForm.patient_name : 'Select a patient to begin'}}</p>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" @click="currentPage=prevPage||'dashboard'"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <button class="btn btn-warning" @click="savePrescription('Draft')"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+            <button class="btn btn-primary" @click="savePrescription('Final')" :disabled="saving">
+              <span v-if="saving" class="spinner"></span>
+              <i v-else class="fa-solid fa-file-prescription"></i> Finalize & Save
+            </button>
+          </div>
+        </div>
+
+        <!-- PATIENT SELECT -->
+        <div class="card" style="margin-bottom:16px" v-if="!rxForm.patient">
+          <div class="card-title" style="margin-bottom:14px"><i class="fa-solid fa-user"></i> Select Patient</div>
+          <div class="search-box">
+            <i class="fa-solid fa-search"></i>
+            <input class="form-control" v-model="patientSearchRx" placeholder="Search patient by name, ID or phone..." @input="searchPatientsRx">
+          </div>
+          <div class="autocomplete-dropdown" v-if="patientSearchResults.length">
+            <div class="autocomplete-item" v-for="p in patientSearchResults" :key="p.id" @click="selectPatientForRx(p)">
+              <div style="font-weight:600">{{p.name}}</div>
+              <div class="item-sub">{{p.patient_id}} · {{p.age}} {{p.age_unit}} · {{p.gender==='M'?'Male':'Female'}} · {{p.blood_group}}</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;color:var(--muted);font-size:0.82rem">
+            Not registered? <button class="btn btn-ghost btn-sm" @click="currentPage='new-patient'"><i class="fa-solid fa-user-plus"></i> Register New Patient</button>
+          </div>
+        </div>
+
+        <div v-if="rxForm.patient">
+          <!-- PATIENT SELECTED BAR -->
+          <div style="background:rgba(0,180,166,0.1);border:1px solid rgba(0,180,166,0.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--navy));display:flex;align-items:center;justify-content:center;font-weight:700;color:white">{{rxForm.patient_name[0]}}</div>
+              <div>
+                <div style="font-weight:700;font-size:1rem">{{rxForm.patient_name}}</div>
+                <div style="font-size:0.78rem;color:var(--muted)">{{rxForm.patient_id_no}} · {{rxForm.patient_age}} · {{rxForm.patient_gender}} · Blood: {{rxForm.patient_blood}}</div>
+                <div style="font-size:0.75rem;color:var(--warning)" v-if="rxForm.patient_allergies"><i class="fa-solid fa-triangle-exclamation"></i> Allergies: {{rxForm.patient_allergies}}</div>
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" @click="clearPatient">Change</button>
+          </div>
+
+          <!-- TEMPLATE LOAD -->
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+            <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px"><i class="fa-solid fa-layer-group"></i> Load from Template (optional — edits won't affect original)</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="pill" :class="{active:loadedTemplateId===t.id}" v-for="t in templates.slice(0,8)" :key="t.id" @click="loadTemplate(t)">{{t.name}}</button>
+              <button class="btn btn-ghost btn-sm" @click="showTemplateSearch=!showTemplateSearch"><i class="fa-solid fa-search"></i> More</button>
+            </div>
+            <div v-if="showTemplateSearch" style="margin-top:8px">
+              <div class="search-box">
+                <i class="fa-solid fa-search"></i>
+                <input class="form-control" v-model="templateSearchRx" placeholder="Search templates..." @input="searchTemplatesRx">
+              </div>
+              <div class="autocomplete-dropdown" v-if="templateSearchResults.length" style="position:relative;margin-top:4px">
+                <div class="autocomplete-item" v-for="t in templateSearchResults" :key="t.id" @click="loadTemplate(t);showTemplateSearch=false">
+                  <div style="font-weight:600">{{t.name}}</div>
+                  <div class="item-sub">{{t.disease}} · {{t.medicines.length}} medicines</div>
+                </div>
+              </div>
+            </div>
+            <div v-if="loadedTemplateId" style="margin-top:8px;font-size:0.78rem;color:var(--teal)"><i class="fa-solid fa-check-circle"></i> Template loaded. Changes here won't affect the template.</div>
+          </div>
+
+          <!-- VITALS -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title" style="margin-bottom:14px"><i class="fa-solid fa-heart-pulse"></i> Vitals & Date</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Visit Date</label>
+                <input class="form-control" v-model="rxForm.visit_date" type="date">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Blood Pressure</label>
+                <input class="form-control" v-model="rxForm.blood_pressure" placeholder="120/80 mmHg">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Pulse</label>
+                <input class="form-control" v-model="rxForm.pulse" placeholder="72 bpm">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Temp</label>
+                <input class="form-control" v-model="rxForm.temperature" placeholder="98.6°F">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Weight</label>
+                <input class="form-control" v-model="rxForm.weight" placeholder="65 kg">
+              </div>
+            </div>
+          </div>
+
+          <!-- COMPLAINT & DIAGNOSIS -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title" style="margin-bottom:14px"><i class="fa-solid fa-stethoscope"></i> Clinical Notes</div>
+            <div class="form-group">
+              <label class="form-label">Chief Complaint</label>
+              <textarea class="form-control" v-model="rxForm.chief_complaint" placeholder="Patient's main complaints..." rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Diagnosis</label>
+              <textarea class="form-control" v-model="rxForm.diagnosis" placeholder="Clinical diagnosis..." rows="2"></textarea>
+            </div>
+          </div>
+
+          <!-- MEDICINES -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header">
+              <div class="card-title"><i class="fa-solid fa-pills"></i> Medicines (Rx)</div>
+              <button class="btn btn-primary btn-sm" @click="addMedicineLine"><i class="fa-solid fa-plus"></i> Add Medicine</button>
+            </div>
+            <div class="table-container" v-if="rxForm.medicines.length">
+              <table class="med-table">
+                <thead><tr><th>#</th><th>Medicine Name</th><th>Dose</th><th>Frequency</th><th>Duration</th><th>Timing</th><th>Instructions</th><th></th></tr></thead>
+                <tbody>
+                  <tr v-for="(med, idx) in rxForm.medicines" :key="idx">
+                    <td style="color:var(--muted);font-weight:700">{{idx+1}}</td>
+                    <td style="min-width:160px">
+                      <div class="autocomplete">
+                        <input class="form-control" v-model="med.medicine_name" placeholder="Medicine..." @input="searchMedForLine(idx)" @focus="med.showDropdown=true" @blur="closeMedDropdown(idx)">
+                        <div class="autocomplete-dropdown" v-if="med.showDropdown && med.suggestions && med.suggestions.length">
+                          <div class="autocomplete-item" v-for="s in med.suggestions" :key="s.id" @mousedown="selectMedForLine(idx, s)">
+                            <div>{{s.name}} {{s.strength}}</div>
+                            <div class="item-sub">{{s.form}} · {{s.generic_name}}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="min-width:80px"><input class="form-control" v-model="med.dose" placeholder="1 tab"></td>
+                    <td style="min-width:120px">
+                      <select class="form-control" v-model="med.frequency">
+                        <option v-for="f in frequencies" :value="f">{{f}}</option>
+                      </select>
+                    </td>
+                    <td style="min-width:90px"><input class="form-control" v-model="med.duration" placeholder="5 days"></td>
+                    <td style="min-width:110px">
+                      <select class="form-control" v-model="med.timing">
+                        <option v-for="t in timings" :value="t">{{t}}</option>
+                      </select>
+                    </td>
+                    <td style="min-width:130px"><input class="form-control" v-model="med.instructions" placeholder="Special notes..."></td>
+                    <td><button class="med-remove-btn" @click="rxForm.medicines.splice(idx,1)"><i class="fa-solid fa-times"></i></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="empty-state" v-else style="padding:24px"><i class="fa-solid fa-pills"></i><p>No medicines added yet</p></div>
+          </div>
+
+          <!-- ADVICE & FOLLOW-UP -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title" style="margin-bottom:14px"><i class="fa-solid fa-circle-info"></i> Advice & Follow-up</div>
+            <div class="form-group">
+              <label class="form-label">Advice / Instructions</label>
+              <textarea class="form-control" v-model="rxForm.advice" placeholder="Diet advice, lifestyle recommendations, warnings..." rows="3"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Follow-up Date</label>
+                <input class="form-control" v-model="rxForm.follow_up_date" type="date">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Additional Notes</label>
+                <input class="form-control" v-model="rxForm.notes" placeholder="Any extra notes...">
+              </div>
+            </div>
+          </div>
+
+          <!-- SAVE AS TEMPLATE -->
+          <div style="background:rgba(232,184,75,0.05);border:1px solid rgba(232,184,75,0.2);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div style="font-weight:600;font-size:0.88rem"><i class="fa-solid fa-layer-group" style="color:var(--gold)"></i> Save as Template</div>
+                <div style="color:var(--muted);font-size:0.78rem;margin-top:2px">Reuse this prescription for future patients with same condition</div>
+              </div>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="checkbox" v-model="rxForm.saveAsTemplate" style="accent-color:var(--gold)">
+                <span style="font-size:0.82rem">Save as template</span>
+              </label>
+            </div>
+            <div v-if="rxForm.saveAsTemplate" style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="form-group" style="margin:0">
+                <label class="form-label required">Template Name</label>
+                <input class="form-control" v-model="rxForm.templateName" placeholder="e.g., Typhoid Standard">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label required">Disease</label>
+                <input class="form-control" v-model="rxForm.templateDisease" placeholder="e.g., Typhoid Fever">
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-primary" @click="savePrescription('Final')" :disabled="saving">
+              <span v-if="saving" class="spinner"></span>
+              <i v-else class="fa-solid fa-file-prescription"></i> Finalize Prescription
+            </button>
+            <button class="btn btn-warning" @click="savePrescription('Draft')"><i class="fa-solid fa-floppy-disk"></i> Save as Draft</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== PATIENT HISTORY MODAL =========== -->
+      <div class="modal-overlay" v-if="showHistory" @click.self="showHistory=false">
+        <div class="modal modal-lg">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-history"></i> Patient History — {{historyPatient?.name}}</div>
+            <button class="modal-close" @click="showHistory=false"><i class="fa-solid fa-times"></i></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="patientHistory.length">
+              <div v-for="rx in patientHistory" :key="rx.id" style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+                  <div>
+                    <span class="badge badge-teal" style="font-family:'IBM Plex Mono';margin-right:8px">{{rx.prescription_no}}</span>
+                    <span style="font-weight:600">{{rx.diagnosis}}</span>
+                  </div>
+                  <div style="display:flex;gap:6px;align-items:center">
+                    <span style="color:var(--muted);font-size:0.8rem">{{rx.visit_date}}</span>
+                    <button class="btn btn-sm btn-primary" @click="printPrescription(rx.id)"><i class="fa-solid fa-print"></i></button>
+                  </div>
+                </div>
+                <div style="font-size:0.82rem;color:var(--muted);margin-bottom:8px">Chief Complaint: {{rx.chief_complaint||'N/A'}}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px">
+                  <span class="badge badge-muted" v-for="m in rx.medicines" :key="m.id">{{m.medicine_name}} {{m.dose}}</span>
+                </div>
+              </div>
+            </div>
+            <div class="empty-state" v-else><i class="fa-solid fa-file-medical"></i><h3>No prescriptions yet</h3></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== TEMPLATE MODAL =========== -->
+      <div class="modal-overlay" v-if="showTemplateModal" @click.self="showTemplateModal=false">
+        <div class="modal modal-xl">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-layer-group"></i> {{editingTemplate ? 'Edit Template' : 'Create Template'}}</div>
+            <button class="modal-close" @click="showTemplateModal=false"><i class="fa-solid fa-times"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label required">Template Name</label>
+                <input class="form-control" v-model="templateForm.name" placeholder="e.g., Typhoid Standard Treatment">
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Disease / Condition</label>
+                <input class="form-control" v-model="templateForm.disease" placeholder="e.g., Typhoid Fever">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Chief Complaint</label>
+              <textarea class="form-control" v-model="templateForm.chief_complaint" placeholder="Typical patient complaints for this condition..." rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Diagnosis</label>
+              <textarea class="form-control" v-model="templateForm.diagnosis" placeholder="Standard diagnosis text..." rows="2"></textarea>
+            </div>
+            <div style="margin-bottom:12px">
+              <div class="card-title" style="margin-bottom:10px"><i class="fa-solid fa-pills"></i> Medicines</div>
+              <div class="table-container" v-if="templateForm.medicines.length">
+                <table class="med-table">
+                  <thead><tr><th>#</th><th>Medicine</th><th>Dose</th><th>Frequency</th><th>Duration</th><th>Timing</th><th>Instructions</th><th></th></tr></thead>
+                  <tbody>
+                    <tr v-for="(med, idx) in templateForm.medicines" :key="idx">
+                      <td style="color:var(--muted);font-weight:700">{{idx+1}}</td>
+                      <td style="min-width:150px"><input class="form-control" v-model="med.medicine_name" placeholder="Medicine name"></td>
+                      <td style="min-width:80px"><input class="form-control" v-model="med.dose" placeholder="1 tab"></td>
+                      <td style="min-width:120px">
+                        <select class="form-control" v-model="med.frequency">
+                          <option v-for="f in frequencies" :value="f">{{f}}</option>
+                        </select>
+                      </td>
+                      <td style="min-width:90px"><input class="form-control" v-model="med.duration" placeholder="7 days"></td>
+                      <td style="min-width:110px">
+                        <select class="form-control" v-model="med.timing">
+                          <option v-for="t in timings" :value="t">{{t}}</option>
+                        </select>
+                      </td>
+                      <td style="min-width:130px"><input class="form-control" v-model="med.instructions" placeholder="..."></td>
+                      <td><button class="med-remove-btn" @click="templateForm.medicines.splice(idx,1)"><i class="fa-solid fa-times"></i></button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <button class="btn btn-secondary btn-sm" style="margin-top:8px" @click="addTemplateMedLine"><i class="fa-solid fa-plus"></i> Add Medicine</button>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Advice</label>
+                <textarea class="form-control" v-model="templateForm.advice" rows="2"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Follow-up (days)</label>
+                <input class="form-control" v-model="templateForm.follow_up_days" type="number" min="1">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" @click="showTemplateModal=false">Cancel</button>
+            <button class="btn btn-primary" @click="saveTemplate" :disabled="saving">
+              <span v-if="saving" class="spinner"></span>
+              <i v-else class="fa-solid fa-save"></i> {{editingTemplate ? 'Update Template' : 'Save Template'}}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== MEDICINE MODAL =========== -->
+      <div class="modal-overlay" v-if="showMedicineModal" @click.self="showMedicineModal=false">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-pills"></i> {{editingMedicine ? 'Edit Medicine' : 'Add Medicine'}}</div>
+            <button class="modal-close" @click="showMedicineModal=false"><i class="fa-solid fa-times"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label required">Brand Name</label>
+                <input class="form-control" v-model="medicineForm.name" placeholder="e.g., Napa">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Generic Name</label>
+                <input class="form-control" v-model="medicineForm.generic_name" placeholder="e.g., Paracetamol">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label required">Form</label>
+                <select class="form-control" v-model="medicineForm.form">
+                  <option v-for="f in ['Tablet','Capsule','Syrup','Injection','Cream','Drops','Inhaler','Patch','Suppository','Powder','Gel','Ointment']" :value="f">{{f}}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Strength</label>
+                <input class="form-control" v-model="medicineForm.strength" placeholder="e.g., 500mg">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Manufacturer</label>
+              <input class="form-control" v-model="medicineForm.manufacturer">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" @click="showMedicineModal=false">Cancel</button>
+            <button class="btn btn-primary" @click="saveMedicine" :disabled="saving">
+              <span v-if="saving" class="spinner"></span>
+              <i v-else class="fa-solid fa-save"></i> Save
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== PRINT MODAL =========== -->
+      <div class="modal-overlay" v-if="showPrint" @click.self="showPrint=false">
+        <div class="modal modal-xl">
+          <div class="modal-header no-print">
+            <div class="modal-title"><i class="fa-solid fa-print"></i> Print Prescription — {{printData?.prescription?.prescription_no}}</div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary" @click="triggerPrint"><i class="fa-solid fa-print"></i> Print</button>
+              <button class="modal-close" @click="showPrint=false"><i class="fa-solid fa-times"></i></button>
+            </div>
+          </div>
+          <div class="modal-body" id="printArea" v-if="printData">
+            <div class="rx-print">
+              <!-- HEADER -->
+              <div class="rx-header">
+                <div>
+                  <div class="rx-doctor-name">Dr. {{printData.doctor.name}}</div>
+                  <div class="rx-doctor-qual">{{printData.doctor.qualification}}</div>
+                  <div class="rx-doctor-qual">{{printData.doctor.specialization}}</div>
+                  <div class="rx-doctor-qual" style="margin-top:4px">Reg. No: {{printData.doctor.registration_no}}</div>
+                </div>
+                <div class="rx-clinic-info">
+                  <div class="rx-clinic-name">{{printData.doctor.clinic_name}}</div>
+                  <div>{{printData.doctor.clinic_address}}</div>
+                  <div v-if="printData.doctor.clinic_phone">Tel: {{printData.doctor.clinic_phone}}</div>
+                  <div v-if="printData.doctor.phone">Mob: {{printData.doctor.phone}}</div>
+                </div>
+              </div>
+              <div class="rx-separator"></div>
+              <!-- PATIENT INFO -->
+              <div class="rx-patient-info">
+                <div class="rx-info-item">
+                  <div class="rx-info-label">Patient Name</div>
+                  <div class="rx-info-value">{{printData.patient.name}}</div>
+                </div>
+                <div class="rx-info-item">
+                  <div class="rx-info-label">Patient ID</div>
+                  <div class="rx-info-value">{{printData.patient.patient_id}}</div>
+                </div>
+                <div class="rx-info-item">
+                  <div class="rx-info-label">Age / Gender</div>
+                  <div class="rx-info-value">{{printData.patient.age}} {{printData.patient.age_unit}} / {{printData.patient.gender==='M'?'Male':printData.patient.gender==='F'?'Female':'Other'}}</div>
+                </div>
+                <div class="rx-info-item">
+                  <div class="rx-info-label">Blood Group</div>
+                  <div class="rx-info-value">{{printData.patient.blood_group}}</div>
+                </div>
+                <div class="rx-info-item">
+                  <div class="rx-info-label">Date</div>
+                  <div class="rx-info-value">{{printData.prescription.visit_date}}</div>
+                </div>
+                <div class="rx-info-item">
+                  <div class="rx-info-label">Rx No.</div>
+                  <div class="rx-info-value" style="font-family:'IBM Plex Mono'">{{printData.prescription.prescription_no}}</div>
+                </div>
+              </div>
+              <!-- BODY -->
+              <div class="rx-body">
+                <!-- Vitals -->
+                <div class="rx-vitals" v-if="printData.prescription.blood_pressure || printData.prescription.pulse || printData.prescription.temperature || printData.prescription.weight">
+                  <div class="rx-vital-item" v-if="printData.prescription.blood_pressure"><span class="rx-vital-label">BP:</span><span class="rx-vital-value">{{printData.prescription.blood_pressure}}</span></div>
+                  <div class="rx-vital-item" v-if="printData.prescription.pulse"><span class="rx-vital-label">Pulse:</span><span class="rx-vital-value">{{printData.prescription.pulse}}</span></div>
+                  <div class="rx-vital-item" v-if="printData.prescription.temperature"><span class="rx-vital-label">Temp:</span><span class="rx-vital-value">{{printData.prescription.temperature}}</span></div>
+                  <div class="rx-vital-item" v-if="printData.prescription.weight"><span class="rx-vital-label">Wt:</span><span class="rx-vital-value">{{printData.prescription.weight}}</span></div>
+                </div>
+                <!-- Complaint -->
+                <div class="rx-dx" v-if="printData.prescription.chief_complaint">
+                  <div class="rx-section-title">Chief Complaint</div>
+                  <p>{{printData.prescription.chief_complaint}}</p>
+                </div>
+                <!-- Diagnosis -->
+                <div class="rx-dx">
+                  <div class="rx-section-title">Diagnosis</div>
+                  <p>{{printData.prescription.diagnosis}}</p>
+                </div>
+                <!-- Medicines -->
+                <div class="rx-medicines">
+                  <div class="rx-section-title" style="display:flex;align-items:center;gap:6px">
+                    <div class="rx-sign">℞</div> Prescription
+                  </div>
+                  <ul class="rx-med-list">
+                    <li class="rx-med-item" v-for="(m, i) in printData.prescription.medicines" :key="m.id">
+                      <span class="rx-med-num">{{i+1}}.</span>
+                      <span class="rx-med-name">{{m.medicine_name}}</span>
+                      <div>
+                        <span class="rx-med-details">{{m.dose}} — {{m.frequency}}, {{m.duration}}, {{m.timing}}</span>
+                        <span class="rx-med-details" v-if="m.instructions"> | {{m.instructions}}</span>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <!-- Advice -->
+                <div class="rx-advice" v-if="printData.prescription.advice">
+                  <div class="rx-section-title">Advice</div>
+                  <p>{{printData.prescription.advice}}</p>
+                </div>
+                <!-- Allergies warning -->
+                <div v-if="printData.patient.allergies" style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:8px 12px;font-size:0.78rem;margin-top:8px">
+                  <strong>⚠ Known Allergies:</strong> {{printData.patient.allergies}}
+                </div>
+              </div>
+              <!-- FOOTER -->
+              <div class="rx-footer">
+                <div class="rx-followup" v-if="printData.prescription.follow_up_date">
+                  <strong>📅 Follow-up:</strong> {{printData.prescription.follow_up_date}}
+                </div>
+                <div class="rx-followup" v-else>—</div>
+                <div class="rx-signature">
+                  <div class="rx-sig-line">Dr. {{printData.doctor.name}}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div class="toast-container">
+    <div class="toast" :class="t.type" v-for="t in toasts" :key="t.id">
+      <i :class="t.type==='success'?'fa-solid fa-check-circle':t.type==='error'?'fa-solid fa-times-circle':'fa-solid fa-info-circle'"></i>
+      {{t.message}}
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000/api';
+
+const {createApp, ref, computed, onMounted, watch} = Vue;
+
+createApp({
+  setup() {
+    const BASE = API;
+    // ---- STATE ----
+    const sidebarCollapsed = ref(false);
+    const currentPage = ref('dashboard');
+    const prevPage = ref('dashboard');
+    const saving = ref(false);
+    const toasts = ref([]);
+
+    // Doctor
+    const doctor = ref(null);
+    const doctorForm = ref({name:'',qualification:'',specialization:'',registration_no:'',phone:'',email:'',clinic_name:'',clinic_address:'',clinic_phone:''});
+
+    // Dashboard
+    const stats = ref({total_patients:0, total_prescriptions:0, total_templates:0, today_prescriptions:0, month_prescriptions:0, recent_patients:[], recent_prescriptions:[]});
+
+    // Patients
+    const patients = ref([]);
+    const patientTotal = ref(0);
+    const patientPage = ref(1);
+    const patientSearch = ref('');
+    const editingPatient = ref(null);
+    const patientForm = ref({name:'',age:'',age_unit:'Years',gender:'M',blood_group:'Unknown',phone:'',address:'',email:'',allergies:'',medical_history:''});
+
+    // Prescriptions
+    const prescriptions = ref([]);
+    const prescriptionTotal = ref(0);
+    const rxSearch = ref('');
+    const editingPrescription = ref(null);
+
+    // Templates
+    const templates = ref([]);
+    const templateSearch = ref('');
+    const selectedDisease = ref('');
+    const diseases = ref([]);
+    const showTemplateModal = ref(false);
+    const editingTemplate = ref(null);
+    const templateForm = ref({name:'',disease:'',doctor:null,chief_complaint:'',diagnosis:'',advice:'',follow_up_days:7,medicines:[]});
+
+    // Medicines
+    const medicines = ref([]);
+    const medSearch = ref('');
+    const showMedicineModal = ref(false);
+    const editingMedicine = ref(null);
+    const medicineForm = ref({name:'',generic_name:'',form:'Tablet',strength:'',manufacturer:''});
+
+    // Rx Form
+    const rxForm = ref({
+      patient: null, patient_name:'', patient_id_no:'', patient_age:'', patient_gender:'', patient_blood:'', patient_allergies:'',
+      visit_date: new Date().toISOString().split('T')[0],
+      blood_pressure:'', temperature:'', pulse:'', weight:'',
+      chief_complaint:'', diagnosis:'', advice:'', follow_up_date:'', notes:'',
+      medicines:[],
+      saveAsTemplate: false, templateName:'', templateDisease:'',
+    });
+    const patientSearchRx = ref('');
+    const patientSearchResults = ref([]);
+    const templateSearchRx = ref('');
+    const templateSearchResults = ref([]);
+    const showTemplateSearch = ref(false);
+    const loadedTemplateId = ref(null);
+
+    // History
+    const showHistory = ref(false);
+    const historyPatient = ref(null);
+    const patientHistory = ref([]);
+
+    // Print
+    const showPrint = ref(false);
+    const printData = ref(null);
+
+    // Lookup data
+    const frequencies = ['Once daily','Twice daily','Thrice daily','Four times daily','Every 6 hours','Every 8 hours','Every 12 hours','Weekly','As needed'];
+    const timings = ['Before Meal','After Meal','With Meal','Empty Stomach','At Bedtime','As Needed'];
+
+    // ---- COMPUTED ----
+    const pageTitle = computed(() => {
+      const map = {
+        dashboard: 'Dashboard', patients: 'Patients', 'new-patient': 'Register Patient',
+        'new-prescription': 'New Prescription', prescriptions: 'Prescriptions',
+        templates: 'Templates', medicines: 'Medicines', settings: 'Doctor Profile'
+      };
+      return map[currentPage.value] || 'RxManager';
+    });
+
+    // ---- API HELPERS ----
+    async function api(method, path, body=null) {
+      const opts = {
+        method,
+        headers: {'Content-Type': 'application/json'},
+      };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(`${BASE}/${path}`, opts);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || JSON.stringify(err) || 'API error');
+      }
+      if (res.status === 204) return null;
+      return res.json();
+    }
+
+    function toast(message, type='success') {
+      const id = Date.now();
+      toasts.value.push({id, message, type});
+      setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 3500);
+    }
+
+    // ---- DOCTOR ----
+    async function loadDoctor() {
+      try {
+        const d = await api('GET', 'doctors/primary/');
+        doctor.value = d;
+        Object.assign(doctorForm.value, d);
+      } catch {}
+    }
+
+    async function saveDoctor() {
+      saving.value = true;
+      try {
+        if (doctor.value?.id) {
+          const d = await api('PUT', `doctors/${doctor.value.id}/`, doctorForm.value);
+          doctor.value = d;
+        } else {
+          const d = await api('POST', 'doctors/', doctorForm.value);
+          doctor.value = d;
+        }
+        toast('Doctor profile saved!');
+      } catch(e) { toast(e.message, 'error'); }
+      saving.value = false;
+    }
+
+    // ---- DASHBOARD ----
+    async function loadDashboard() {
+      try {
+        const d = await api('GET', 'dashboard/');
+        stats.value = d;
+      } catch {}
+    }
+
+    // ---- PATIENTS ----
+    async function loadPatients() {
+      try {
+        const q = new URLSearchParams({page: patientPage.value});
+        if (patientSearch.value) q.set('search', patientSearch.value);
+        const d = await api('GET', `patients/?${q}`);
+        patients.value = d.results || d;
+        patientTotal.value = d.count || patients.value.length;
+      } catch(e) { toast(e.message, 'error'); }
+    }
+
+    let patientSearchTimer;
+    function searchPatients() {
+      clearTimeout(patientSearchTimer);
+      patientPage.value = 1;
+      patientSearchTimer = setTimeout(loadPatients, 300);
+    }
+
+    function editPatient(p) {
+      editingPatient.value = p;
+      Object.assign(patientForm.value, p);
+      currentPage.value = 'new-patient';
+    }
+
+    function resetPatientForm() {
+      editingPatient.value = null;
+      patientForm.value = {name:'',age:'',age_unit:'Years',gender:'M',blood_group:'Unknown',phone:'',address:'',email:'',allergies:'',medical_history:''};
+    }
+
+    async function savePatient() {
+      if (!patientForm.value.name || !patientForm.value.age || !patientForm.value.gender) {
+        toast('Please fill required fields', 'error'); return;
+      }
+      saving.value = true;
+      try {
+        if (editingPatient.value?.id) {
+          await api('PUT', `patients/${editingPatient.value.id}/`, patientForm.value);
+          toast('Patient updated!');
+        } else {
+          const p = await api('POST', 'patients/', patientForm.value);
+          toast('Patient registered: ' + p.patient_id);
+        }
+        resetPatientForm();
+        await loadPatients();
+        await loadDashboard();
+        currentPage.value = 'patients';
+      } catch(e) { toast(e.message, 'error'); }
+      saving.value = false;
+    }
+
+    async function viewPatientHistory(p) {
+      historyPatient.value = p;
+      try {
+        const d = await api('GET', `patients/${p.id}/prescriptions/`);
+        patientHistory.value = d;
+        showHistory.value = true;
+      } catch(e) { toast(e.message, 'error'); }
+    }
+
+    // ---- PRESCRIPTIONS ----
+    async function loadPrescriptions() {
+      try {
+        const q = new URLSearchParams();
+        if (rxSearch.value) q.set('search', rxSearch.value);
+        const d = await api('GET', `prescriptions/?${q}`);
+        prescriptions.value = d.results || d;
+        prescriptionTotal.value = d.count || prescriptions.value.length;
+      } catch(e) { toast(e.message, 'error'); }
+    }
+
+    let rxSearchTimer;
+    function searchPrescriptions() {
+      clearTimeout(rxSearchTimer);
+      rxSearchTimer = setTimeout(loadPrescriptions, 300);
+    }
+
+    function startNewPrescription() {
+      prevPage.value = currentPage.value;
+      editingPrescription.value = null;
+      resetRxForm();
+      currentPage.value = 'new-prescription';
+    }
+
+    function openPatientPrescription(p) {
+      prevPage.value = currentPage.value;
+      editingPrescription.value = null;
+      resetRxForm();
+      selectPatientForRx(p);
+      currentPage.value = 'new-prescription';
+    }
+
+    function resetRxForm() {
+      rxForm.value = {
+        patient: null, patient_name:'', patient_id_no:'', patient_age:'', patient_gender:'', patient_blood:'', patient_allergies:'',
+        visit_date: new Date().toISOString().split('T')[0],
+        blood_pressure:'', temperature:'', pulse:'', weight:'',
+        chief_complaint:'', diagnosis:'', advice:'', follow_up_date:'', notes:'',
+        medicines:[],
+        saveAsTemplate: false, templateName:'', templateDisease:'',
+      };
+      loadedTemplateId.value = null;
+      patientSearchRx.value = '';
+    }
+
+    function clearPatient() {
+      rxForm.value.patient = null;
+      rxForm.value.patient_name = '';
+      patientSearchRx.value = '';
+    }
+
+    let pRxTimer;
+    function searchPatientsRx() {
+      clearTimeout(pRxTimer);
+      if (!patientSearchRx.value) { patientSearchResults.value = []; return; }
+      pRxTimer = setTimeout(async () => {
+        try {
+          const d = await api('GET', `patients/?search=${patientSearchRx.value}&page_size=8`);
+          patientSearchResults.value = d.results || d;
+        } catch {}
+      }, 300);
+    }
+
+    function selectPatientForRx(p) {
+      rxForm.value.patient = p.id;
+      rxForm.value.patient_name = p.name;
+      rxForm.value.patient_id_no = p.patient_id;
+      rxForm.value.patient_age = `${p.age} ${p.age_unit}`;
+      rxForm.value.patient_gender = p.gender === 'M' ? 'Male' : p.gender === 'F' ? 'Female' : 'Other';
+      rxForm.value.patient_blood = p.blood_group;
+      rxForm.value.patient_allergies = p.allergies;
+      patientSearchResults.value = [];
+      patientSearchRx.value = '';
+    }
+
+    let tRxTimer;
+    function searchTemplatesRx() {
+      clearTimeout(tRxTimer);
+      tRxTimer = setTimeout(async () => {
+        try {
+          const d = await api('GET', `templates/?search=${templateSearchRx.value}`);
+          templateSearchResults.value = d.results || d;
+        } catch {}
+      }, 300);
+    }
+
+    function loadTemplate(t) {
+      loadedTemplateId.value = t.id;
+      rxForm.value.chief_complaint = t.chief_complaint || rxForm.value.chief_complaint;
+      rxForm.value.diagnosis = t.diagnosis || rxForm.value.diagnosis;
+      rxForm.value.advice = t.advice || rxForm.value.advice;
+      if (t.follow_up_days) {
+        const d = new Date();
+        d.setDate(d.getDate() + t.follow_up_days);
+        rxForm.value.follow_up_date = d.toISOString().split('T')[0];
+      }
+      rxForm.value.medicines = (t.medicines || []).map((m, i) => ({
+        medicine_name: m.medicine_name || '', dose: m.dose || '', frequency: m.frequency || 'Once daily',
+        duration: m.duration || '', timing: m.timing || 'After Meal', instructions: m.instructions || '',
+        showDropdown: false, suggestions: [],
+      }));
+    }
+
+    function addMedicineLine() {
+      rxForm.value.medicines.push({medicine_name:'', dose:'1 tablet', frequency:'Twice daily', duration:'5 days', timing:'After Meal', instructions:'', showDropdown:false, suggestions:[]});
+    }
+
+    let medSearchTimers = {};
+    async function searchMedForLine(idx) {
+      clearTimeout(medSearchTimers[idx]);
+      const med = rxForm.value.medicines[idx];
+      if (!med.medicine_name || med.medicine_name.length < 2) { med.suggestions = []; return; }
+      medSearchTimers[idx] = setTimeout(async () => {
+        try {
+          const d = await api('GET', `medicines/?search=${med.medicine_name}&page_size=6`);
+          const list = d.results || d;
+          med.suggestions = list;
+          med.showDropdown = true;
+        } catch {}
+      }, 250);
+    }
+
+    function selectMedForLine(idx, s) {
+      const med = rxForm.value.medicines[idx];
+      med.medicine_name = `${s.name} ${s.strength}`.trim();
+      med.suggestions = [];
+      med.showDropdown = false;
+    }
+
+    function closeMedDropdown(idx) {
+      setTimeout(() => {
+        if (rxForm.value.medicines[idx]) rxForm.value.medicines[idx].showDropdown = false;
+      }, 200);
+    }
+
+    async function savePrescription(status) {
+      if (!rxForm.value.patient) { toast('Please select a patient', 'error'); return; }
+      if (!rxForm.value.diagnosis) { toast('Diagnosis is required', 'error'); return; }
+      if (!doctor.value) { toast('Doctor profile not configured', 'error'); return; }
+      saving.value = true;
+      try {
+        // Save as template first if requested
+        if (rxForm.value.saveAsTemplate && rxForm.value.templateName && rxForm.value.templateDisease) {
+          const tData = {
+            doctor: doctor.value.id,
+            name: rxForm.value.templateName,
+            disease: rxForm.value.templateDisease,
+            chief_complaint: rxForm.value.chief_complaint,
+            diagnosis: rxForm.value.diagnosis,
+            advice: rxForm.value.advice,
+            follow_up_days: 7,
+            medicines: rxForm.value.medicines.map((m, i) => ({...m, order:i, medicine:null})),
+          };
+          await api('POST', 'templates/', tData);
+          toast('Template saved!');
+          await loadTemplates();
+        }
+
+        const payload = {
+          doctor: doctor.value.id,
+          patient: rxForm.value.patient,
+          template: loadedTemplateId.value || null,
+          visit_date: rxForm.value.visit_date,
+          blood_pressure: rxForm.value.blood_pressure,
+          temperature: rxForm.value.temperature,
+          pulse: rxForm.value.pulse,
+          weight: rxForm.value.weight,
+          chief_complaint: rxForm.value.chief_complaint,
+          diagnosis: rxForm.value.diagnosis,
+          advice: rxForm.value.advice,
+          follow_up_date: rxForm.value.follow_up_date || null,
+          notes: rxForm.value.notes,
+          status,
+          medicines: rxForm.value.medicines.map((m, i) => ({
+            medicine_name: m.medicine_name, dose: m.dose, frequency: m.frequency,
+            duration: m.duration, timing: m.timing, instructions: m.instructions, order: i,
+          })),
+        };
+
+        let rx;
+        if (editingPrescription.value?.id) {
+          rx = await api('PUT', `prescriptions/${editingPrescription.value.id}/`, payload);
+          toast('Prescription updated!');
+        } else {
+          rx = await api('POST', 'prescriptions/', payload);
+          toast(`Prescription saved: ${rx.prescription_no}`);
+        }
+        await loadDashboard();
+        await loadPrescriptions();
+        // Auto-print on finalize
+        if (status === 'Final') {
+          await printPrescription(rx.id);
+        }
+        currentPage.value = 'prescriptions';
+      } catch(e) { toast(e.message, 'error'); }
+      saving.value = false;
+    }
+
+    function editPrescription(rx) {
+      // For now just show print
+      printPrescription(rx.id);
+    }
+
+    function useTemplateForPrescription(t) {
+      startNewPrescription();
+      setTimeout(() => loadTemplate(t), 100);
+    }
+
+    // ---- TEMPLATES ----
+    async function loadTemplates() {
+      try {
+        const q = new URLSearchParams();
+        if (templateSearch.value) q.set('search', templateSearch.value);
+        if (selectedDisease.value) q.set('disease', selectedDisease.value);
+        const d = await api('GET', `templates/?${q}&page_size=50`);
+        templates.value = d.results || d;
+      } catch {}
+    }
+
+    async function loadDiseases() {
+      try {
+        const d = await api('GET', 'templates/diseases/');
+        diseases.value = d;
+      } catch {}
+    }
+
+    function openTemplateModal(t=null) {
+      editingTemplate.value = t;
+      if (t) {
+        templateForm.value = {
+          name: t.name, disease: t.disease, doctor: t.doctor,
+          chief_complaint: t.chief_complaint, diagnosis: t.diagnosis,
+          advice: t.advice, follow_up_days: t.follow_up_days,
+          medicines: (t.medicines||[]).map(m => ({...m})),
+        };
+      } else {
+        templateForm.value = {name:'',disease:'',doctor:doctor.value?.id,chief_complaint:'',diagnosis:'',advice:'',follow_up_days:7,medicines:[]};
+      }
+      showTemplateModal.value = true;
+    }
+
+    function addTemplateMedLine() {
+      templateForm.value.medicines.push({medicine_name:'', dose:'1 tablet', frequency:'Twice daily', duration:'7 days', timing:'After Meal', instructions:''});
+    }
+
+    async function saveTemplate() {
+      if (!templateForm.value.name || !templateForm.value.disease) { toast('Name and disease required', 'error'); return; }
+      saving.value = true;
+      try {
+        const payload = {...templateForm.value, doctor: doctor.value?.id, medicines: templateForm.value.medicines.map((m,i)=>({...m,order:i,medicine:null}))};
+        if (editingTemplate.value?.id) {
+          await api('PUT', `templates/${editingTemplate.value.id}/`, payload);
+          toast('Template updated!');
+        } else {
+          await api('POST', 'templates/', payload);
+          toast('Template created!');
+        }
+        showTemplateModal.value = false;
+        await loadTemplates();
+        await loadDiseases();
+      } catch(e) { toast(e.message, 'error'); }
+      saving.value = false;
+    }
+
+    async function cloneTemplate(t) {
+      try {
+        await api('POST', `templates/${t.id}/clone/`);
+        toast('Template cloned!');
+        await loadTemplates();
+      } catch(e) { toast(e.message, 'error'); }
+    }
+
+    async function deleteTemplate(t) {
+      if (!confirm(`Delete template "${t.name}"?`)) return;
+      try {
+        await api('PATCH', `templates/${t.id}/`, {is_active: false});
+        toast('Template deleted');
+        await loadTemplates();
+        await loadDashboard();
+      } catch(e) { toast(e.message, 'error'); }
+    }
+
+    // ---- MEDICINES ----
+    async function loadMedicines() {
+      try {
+        const q = medSearch.value ? `?search=${medSearch.value}&page_size=100` : '?page_size=100';
+        const d = await api('GET', `medicines/${q}`);
+        medicines.value = d.results || d;
+      } catch {}
+    }
+
+    function openMedicineModal(m=null) {
+      editingMedicine.value = m;
+      if (m) { Object.assign(medicineForm.value, m); }
+      else { medicineForm.value = {name:'',generic_name:'',form:'Tablet',strength:'',manufacturer:''}; }
+      showMedicineModal.value = true;
+    }
+
+    async function saveMedicine() {
+      if (!medicineForm.value.name) { toast('Name required', 'error'); return; }
+      saving.value = true;
+      try {
+        if (editingMedicine.value?.id) {
+          await api('PUT', `medicines/${editingMedicine.value.id}/`, medicineForm.value);
+          toast('Medicine updated!');
+        } else {
+          await api('POST', 'medicines/', medicineForm.value);
+          toast('Medicine added!');
+        }
+        showMedicineModal.value = false;
+        await loadMedicines();
+      } catch(e) { toast(e.message, 'error'); }
+      saving.value = false;
+    }
+
+    // ---- PRINT ----
+    async function printPrescription(id) {
+      try {
+        const d = await api('GET', `prescriptions/${id}/print_data/`);
+        printData.value = d;
+        showPrint.value = true;
+      } catch(e) { toast(e.message, 'error'); }
+    }
+
+    function triggerPrint() {
+      const printContent = document.getElementById('printArea').innerHTML;
+      const win = window.open('', '', 'width=900,height=700');
+      win.document.write(`
+        <html><head>
+        <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+        <style>
+          * { margin:0; padding:0; box-sizing:border-box; }
+          body { font-family:'IBM Plex Sans',sans-serif; background:white; color:#1a1a2e; }
+          .rx-print { max-width:800px; margin:0 auto; }
+          .rx-header { background: linear-gradient(135deg,#0B1628,#152240); color:white; padding:20px 30px; display:flex; justify-content:space-between; }
+          .rx-doctor-name { font-size:1.4rem; font-weight:700; font-family:'Merriweather',serif; color:#00B4A6; }
+          .rx-doctor-qual { font-size:0.85rem; opacity:0.8; margin:2px 0; }
+          .rx-clinic-info { text-align:right; font-size:0.78rem; opacity:0.8; }
+          .rx-clinic-name { font-size:1rem; font-weight:600; color:#E8B84B; margin-bottom:3px; }
+          .rx-separator { height:3px; background:linear-gradient(90deg,#00B4A6,#E8B84B,#00B4A6); }
+          .rx-patient-info { padding:14px 30px; background:#f8fafc; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; border-bottom:1px solid #e2e8f0; }
+          .rx-info-item { font-size:0.82rem; }
+          .rx-info-label { color:#6b7280; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; }
+          .rx-info-value { font-weight:600; color:#1a1a2e; }
+          .rx-body { padding:20px 30px; }
+          .rx-vitals { display:flex; gap:16px; flex-wrap:wrap; padding:10px 14px; background:#f0fdf8; border-radius:8px; border-left:3px solid #00B4A6; margin-bottom:16px; font-size:0.82rem; }
+          .rx-vital-item { display:flex; align-items:center; gap:5px; }
+          .rx-vital-label { color:#6b7280; }
+          .rx-vital-value { font-weight:600; }
+          .rx-section-title { font-size:0.78rem; text-transform:uppercase; letter-spacing:1px; color:#00B4A6; font-weight:700; margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid #e2e8f0; }
+          .rx-dx { margin-bottom:14px; }
+          .rx-dx p { font-size:0.9rem; font-weight:500; }
+          .rx-sign { font-size:2rem; color:#0B1628; font-family:'Merriweather',serif; display:flex; align-items:center; gap:5px; }
+          .rx-medicines { margin-bottom:14px; }
+          .rx-med-list { list-style:none; }
+          .rx-med-item { display:flex; align-items:baseline; padding:8px 0; border-bottom:1px dashed #e2e8f0; gap:12px; }
+          .rx-med-num { font-size:0.78rem; color:#00B4A6; font-weight:700; min-width:20px; }
+          .rx-med-name { font-weight:600; font-size:0.92rem; flex:1; }
+          .rx-med-details { font-size:0.8rem; color:#4b5563; }
+          .rx-advice { margin-bottom:14px; font-size:0.85rem; color:#374151; }
+          .rx-footer { padding:14px 30px; display:flex; justify-content:space-between; align-items:flex-end; border-top:1px solid #e2e8f0; background:#f8fafc; }
+          .rx-followup { font-size:0.82rem; color:#374151; }
+          .rx-sig-line { width:150px; border-top:1px solid #374151; margin-top:40px; font-size:0.75rem; color:#6b7280; text-align:center; }
+        </style>
+        </head><body>${printContent}</body></html>
+      `);
+      win.document.close();
+      setTimeout(() => win.print(), 500);
+    }
+
+    function formatDate(d) {
+      if (!d) return '—';
+      return new Date(d).toLocaleDateString('en-BD', {day:'2-digit', month:'short', year:'numeric'});
+    }
+
+    // ---- WATCHERS ----
+    watch(currentPage, async (p) => {
+      if (p === 'dashboard') await loadDashboard();
+      if (p === 'patients') await loadPatients();
+      if (p === 'prescriptions') await loadPrescriptions();
+      if (p === 'templates') { await loadTemplates(); await loadDiseases(); }
+      if (p === 'medicines') await loadMedicines();
+      if (p === 'settings') await loadDoctor();
+    });
+
+    // ---- INIT ----
+    onMounted(async () => {
+      await loadDoctor();
+      await loadDashboard();
+      await loadTemplates();
+    });
+
+    return {
+      sidebarCollapsed, currentPage, prevPage, saving, toasts, pageTitle,
+      doctor, doctorForm, saveDoctor,
+      stats, loadDashboard,
+      patients, patientTotal, patientPage, patientSearch, editingPatient, patientForm,
+      loadPatients, searchPatients, editPatient, resetPatientForm, savePatient, viewPatientHistory,
+      showHistory, historyPatient, patientHistory,
+      prescriptions, prescriptionTotal, rxSearch, editingPrescription,
+      loadPrescriptions, searchPrescriptions, startNewPrescription,
+      rxForm, patientSearchRx, patientSearchResults, templateSearchRx, templateSearchResults,
+      showTemplateSearch, loadedTemplateId, frequencies, timings,
+      searchPatientsRx, selectPatientForRx, searchTemplatesRx, clearPatient,
+      loadTemplate, addMedicineLine, searchMedForLine, selectMedForLine, closeMedDropdown,
+      savePrescription, editPrescription, openPatientPrescription,
+      templates, templateSearch, selectedDisease, diseases,
+      showTemplateModal, editingTemplate, templateForm,
+      loadTemplates, openTemplateModal, addTemplateMedLine, saveTemplate, cloneTemplate, deleteTemplate, useTemplateForPrescription,
+      medicines, medSearch, showMedicineModal, editingMedicine, medicineForm,
+      loadMedicines, openMedicineModal, saveMedicine,
+      showPrint, printData, printPrescription, triggerPrint,
+      formatDate,
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
