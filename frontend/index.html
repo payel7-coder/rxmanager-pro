@@ -257,10 +257,39 @@ tr:hover td { background: rgba(0,180,166,0.03); }
 .alert-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: var(--danger); }
 .alert-info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: var(--info); }
 /* ===== MEDICINE TABLE IN FORM ===== */
-.med-table { width: 100%; font-size: 0.82rem; }
-.med-table th { background: var(--navy2); padding: 8px 10px; font-size: 0.72rem; }
-.med-table td { padding: 6px; border-top: 1px solid var(--border); }
-.med-table .form-control { padding: 6px 8px; font-size: 0.82rem; }
+/* ===== MEDICINE FLEX ROWS (replaces table — lets dropdown escape overflow) ===== */
+.med-row-header {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 10px;
+  background: var(--navy2); border-radius: 7px;
+  font-size: 0.7rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  font-weight: 600; margin-bottom: 4px;
+}
+.med-flex-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  position: relative;          /* each row is its own stacking root */
+}
+.med-flex-row:last-child { border-bottom: none; }
+.med-flex-row:hover { background: rgba(0,180,166,0.03); border-radius: 6px; }
+.med-flex-row .form-control { padding: 6px 8px; font-size: 0.82rem; }
+/* Column widths */
+.med-col-num    { flex: 0 0 28px; text-align: center; }
+.med-col-name   { flex: 0 0 200px; position: relative; }
+.med-col-dose   { flex: 0 0 90px; }
+.med-col-freq   { flex: 0 0 140px; }
+.med-col-dur    { flex: 0 0 90px; }
+.med-col-timing { flex: 0 0 120px; }
+.med-col-note   { flex: 1; min-width: 0; }
+.med-col-del    { flex: 0 0 32px; text-align: center; }
+.med-num-badge  {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0,180,166,0.15); color: var(--teal);
+  font-size: 0.75rem; font-weight: 700;
+}
 .med-remove-btn { background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s; }
 .med-remove-btn:hover { background: rgba(239,68,68,0.1); }
 /* ===== PRINT ===== */
@@ -369,20 +398,30 @@ tr:hover td { background: rgba(0,180,166,0.03); }
 /* ===== SEARCH AUTOCOMPLETE ===== */
 .autocomplete { position: relative; }
 .autocomplete-dropdown {
-  position: absolute; top: 100%; left: 0; right: 0; z-index: 9999;
-  background: var(--surface2); border: 1px solid var(--teal);
-  border-radius: 7px; margin-top: 4px;
-  max-height: 260px; overflow-y: auto;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+  position: absolute; top: calc(100% + 4px); left: 0;
+  width: 420px;          /* wide enough to show all suggestion pills */
+  z-index: 99999;        /* above everything */
+  background: var(--surface2);
+  border: 1px solid var(--teal);
+  border-radius: 10px;
+  max-height: 280px; overflow-y: auto;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.7);
+  pointer-events: auto;
 }
 .autocomplete-item {
-  padding: 9px 12px; cursor: pointer;
+  padding: 10px 14px; cursor: pointer;
   font-size: 0.85rem; transition: all 0.15s;
   border-bottom: 1px solid var(--border);
 }
 .autocomplete-item:last-child { border-bottom: none; }
-.autocomplete-item:hover { background: rgba(0,180,166,0.1); color: var(--teal); }
+.autocomplete-item:hover { background: rgba(0,180,166,0.08); }
+.autocomplete-item:hover .med-suggestion-name { color: var(--teal); }
 .autocomplete-item .item-sub { font-size: 0.72rem; color: var(--muted); }
+.med-suggestion-name { font-weight: 700; font-size: 0.88rem; margin-bottom: 5px; display:flex; align-items:center; gap:8px; }
+.med-suggestion-name .med-badge { font-size:0.68rem; padding:2px 7px; border-radius:12px; background:rgba(0,180,166,0.15); color:var(--teal); font-weight:600; }
+.med-suggestion-pills { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
+.med-suggestion-pill { font-size:0.72rem; padding:2px 8px; border-radius:10px; border:1px solid var(--border); color:var(--muted); display:flex; align-items:center; gap:3px; }
+.med-suggestion-pill i { font-size:0.65rem; color:var(--teal); }
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -419,7 +458,134 @@ tr:hover td { background: rgba(0,180,166,0.03); }
 </head>
 <body>
 <div id="app">
-  <div class="app-layout">
+
+  <!-- ============ AUTH LOADING (resolving token on page refresh) ============ -->
+  <div v-if="!authChecked" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy)">
+    <div style="text-align:center;color:var(--muted)">
+      <div class="spinner" style="width:32px;height:32px;border-width:3px;margin-bottom:12px"></div>
+      <div>Loading RxManager...</div>
+    </div>
+  </div>
+
+  <!-- ============ LOGIN / REGISTER SCREEN ============ -->
+  <div v-else-if="!isLoggedIn" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(ellipse at top,rgba(0,180,166,0.08),transparent 60%),var(--navy)">
+    <div style="width:100%;max-width:460px">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--teal),var(--teal-light));display:flex;align-items:center;justify-content:center;font-size:26px;color:white;margin:0 auto 14px;box-shadow:0 8px 24px rgba(0,180,166,0.3)">
+          <i class="fa-solid fa-kit-medical"></i>
+        </div>
+        <h1 style="font-family:'Merriweather',serif;font-weight:400;font-size:1.6rem;color:var(--teal)">RxManager</h1>
+        <p style="color:var(--muted);font-size:0.85rem;margin-top:2px">Prescription Management for Clinics</p>
+      </div>
+
+      <div class="card">
+        <!-- Tabs -->
+        <div class="tabs" style="margin-bottom:20px">
+          <button class="tab-btn" :class="{active: authScreen==='login'}" @click="authScreen='login';authError=''">
+            <i class="fa-solid fa-right-to-bracket"></i> Sign In
+          </button>
+          <button class="tab-btn" :class="{active: authScreen==='register'}" @click="authScreen='register';authError=''">
+            <i class="fa-solid fa-user-doctor"></i> Register as Doctor
+          </button>
+        </div>
+
+        <div class="alert alert-danger" v-if="authError"><i class="fa-solid fa-triangle-exclamation"></i> {{authError}}</div>
+
+        <!-- ===== LOGIN FORM ===== -->
+        <div v-if="authScreen==='login'">
+          <div class="form-group">
+            <label class="form-label required">Username</label>
+            <input class="form-control" v-model="loginForm.username" placeholder="Your username" @keyup.enter="doLogin" autofocus>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Password</label>
+            <input class="form-control" v-model="loginForm.password" type="password" placeholder="Your password" @keyup.enter="doLogin">
+          </div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px" @click="doLogin" :disabled="authBusy">
+            <span v-if="authBusy" class="spinner"></span>
+            <i v-else class="fa-solid fa-right-to-bracket"></i> Sign In
+          </button>
+          <p style="text-align:center;color:var(--muted);font-size:0.78rem;margin-top:14px">
+            Are you an assistant? Use the username and password your doctor created for you.
+          </p>
+        </div>
+
+        <!-- ===== REGISTER FORM (Doctor only — assistants are created BY doctors) ===== -->
+        <div v-else>
+          <div class="alert alert-info" style="margin-bottom:16px">
+            <i class="fa-solid fa-circle-info"></i> Only doctors register here. Once registered, you can create assistant accounts from inside the app.
+          </div>
+          <div class="card-title" style="margin-bottom:10px;font-size:0.82rem"><i class="fa-solid fa-user"></i> Login Credentials</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Choose Username</label>
+              <input class="form-control" v-model="registerForm.username" placeholder="e.g. dr.yourname">
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Password</label>
+              <input class="form-control" v-model="registerForm.password" type="password" placeholder="Min 8 characters">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Confirm Password</label>
+            <input class="form-control" v-model="registerForm.confirm_password" type="password" placeholder="Re-enter password">
+          </div>
+
+          <div class="card-title" style="margin:16px 0 10px;font-size:0.82rem"><i class="fa-solid fa-user-doctor"></i> Doctor Information</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Full Name</label>
+              <input class="form-control" v-model="registerForm.name" placeholder="Dr. First Last">
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Registration No.</label>
+              <input class="form-control" v-model="registerForm.registration_no" placeholder="BMDC-XXXXX">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Qualification</label>
+            <input class="form-control" v-model="registerForm.qualification" placeholder="MBBS, MD, FCPS...">
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Specialization</label>
+            <input class="form-control" v-model="registerForm.specialization" placeholder="General Medicine, Cardiology...">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">Phone</label>
+              <input class="form-control" v-model="registerForm.phone" placeholder="+880...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input class="form-control" v-model="registerForm.email" type="email">
+            </div>
+          </div>
+
+          <div class="card-title" style="margin:16px 0 10px;font-size:0.82rem"><i class="fa-solid fa-hospital"></i> Clinic Information</div>
+          <div class="form-group">
+            <label class="form-label required">Clinic / Hospital Name</label>
+            <input class="form-control" v-model="registerForm.clinic_name" placeholder="Clinic or hospital name">
+          </div>
+          <div class="form-group">
+            <label class="form-label required">Clinic Address</label>
+            <textarea class="form-control" v-model="registerForm.clinic_address" rows="2" placeholder="Full address for prescription header"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Clinic Phone</label>
+            <input class="form-control" v-model="registerForm.clinic_phone">
+          </div>
+
+          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;margin-top:6px" @click="doRegister" :disabled="authBusy">
+            <span v-if="authBusy" class="spinner"></span>
+            <i v-else class="fa-solid fa-user-plus"></i> Create Doctor Account
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN APP (only once logged in) ============ -->
+  <div class="app-layout" v-else>
     <!-- SIDEBAR -->
     <aside class="sidebar" :class="{collapsed: sidebarCollapsed}">
       <div class="sidebar-logo">
@@ -430,8 +596,8 @@ tr:hover td { background: rgba(0,180,166,0.03); }
         </div>
       </div>
       <nav class="sidebar-nav">
-        <div class="nav-section-label">Main</div>
-        <a class="nav-item" :class="{active: currentPage==='dashboard'}" @click="currentPage='dashboard'">
+        <div class="nav-section-label" v-if="isDoctor">Main</div>
+        <a class="nav-item" v-if="isDoctor" :class="{active: currentPage==='dashboard'}" @click="currentPage='dashboard'">
           <i class="fa-solid fa-chart-pie"></i>
           <span v-show="!sidebarCollapsed">Dashboard</span>
         </a>
@@ -439,38 +605,64 @@ tr:hover td { background: rgba(0,180,166,0.03); }
         <a class="nav-item" :class="{active: currentPage==='patients'}" @click="currentPage='patients'">
           <i class="fa-solid fa-users"></i>
           <span v-show="!sidebarCollapsed">All Patients</span>
-          <span class="badge" v-if="!sidebarCollapsed && stats.total_patients">{{stats.total_patients}}</span>
+          <span class="badge" v-if="!sidebarCollapsed && isDoctor && stats.total_patients">{{stats.total_patients}}</span>
         </a>
         <a class="nav-item" :class="{active: currentPage==='new-patient'}" @click="currentPage='new-patient'">
           <i class="fa-solid fa-user-plus"></i>
           <span v-show="!sidebarCollapsed">Register Patient</span>
         </a>
-        <div class="nav-section-label">Prescriptions</div>
-        <a class="nav-item" :class="{active: currentPage==='new-prescription'}" @click="startNewPrescription">
-          <i class="fa-solid fa-file-prescription"></i>
-          <span v-show="!sidebarCollapsed">New Prescription</span>
-        </a>
-        <a class="nav-item" :class="{active: currentPage==='prescriptions'}" @click="currentPage='prescriptions'">
-          <i class="fa-solid fa-clipboard-list"></i>
-          <span v-show="!sidebarCollapsed">All Prescriptions</span>
-        </a>
-        <div class="nav-section-label">Templates</div>
-        <a class="nav-item" :class="{active: currentPage==='templates'}" @click="currentPage='templates'">
-          <i class="fa-solid fa-layer-group"></i>
-          <span v-show="!sidebarCollapsed">Templates</span>
-          <span class="badge" v-if="!sidebarCollapsed && stats.total_templates">{{stats.total_templates}}</span>
-        </a>
+        <template v-if="isDoctor">
+          <div class="nav-section-label">Prescriptions</div>
+          <a class="nav-item" :class="{active: currentPage==='new-prescription'}" @click="startNewPrescription">
+            <i class="fa-solid fa-file-prescription"></i>
+            <span v-show="!sidebarCollapsed">New Prescription</span>
+          </a>
+          <a class="nav-item" :class="{active: currentPage==='prescriptions'}" @click="currentPage='prescriptions'">
+            <i class="fa-solid fa-clipboard-list"></i>
+            <span v-show="!sidebarCollapsed">All Prescriptions</span>
+          </a>
+          <div class="nav-section-label">Templates</div>
+          <a class="nav-item" :class="{active: currentPage==='templates'}" @click="currentPage='templates'">
+            <i class="fa-solid fa-layer-group"></i>
+            <span v-show="!sidebarCollapsed">Templates</span>
+            <span class="badge" v-if="!sidebarCollapsed && stats.total_templates">{{stats.total_templates}}</span>
+          </a>
+        </template>
         <div class="nav-section-label">Settings</div>
         <a class="nav-item" :class="{active: currentPage==='medicines'}" @click="currentPage='medicines'">
           <i class="fa-solid fa-pills"></i>
           <span v-show="!sidebarCollapsed">Medicine List</span>
         </a>
-        <a class="nav-item" :class="{active: currentPage==='settings'}" @click="currentPage='settings'">
-          <i class="fa-solid fa-gear"></i>
-          <span v-show="!sidebarCollapsed">Doctor Profile</span>
-        </a>
+        <template v-if="isDoctor">
+          <a class="nav-item" :class="{active: currentPage==='assistants'}" @click="currentPage='assistants'">
+            <i class="fa-solid fa-user-nurse"></i>
+            <span v-show="!sidebarCollapsed">Manage Assistants</span>
+            <span class="badge" v-if="!sidebarCollapsed && assistantsList.length">{{assistantsList.filter(a=>a.is_active).length}}</span>
+          </a>
+          <a class="nav-item" :class="{active: currentPage==='settings'}" @click="currentPage='settings'">
+            <i class="fa-solid fa-gear"></i>
+            <span v-show="!sidebarCollapsed">Doctor Profile</span>
+          </a>
+        </template>
       </nav>
       <div class="sidebar-footer">
+        <div style="padding:8px 10px;margin-bottom:6px;border-top:1px solid var(--border);padding-top:12px" v-show="!sidebarCollapsed">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;color:white;flex-shrink:0">
+              {{me?.display_name?.[0] || '?'}}
+            </div>
+            <div style="min-width:0;flex:1">
+              <div style="font-weight:600;font-size:0.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{me?.display_name}}</div>
+              <div style="font-size:0.68rem;color:var(--muted)">
+                <span class="badge" :class="isDoctor?'badge-teal':'badge-gold'" style="padding:1px 6px">{{isDoctor?'Doctor':'Assistant'}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="collapse-btn" @click="doLogout" style="color:var(--danger);margin-bottom:4px" v-show="!sidebarCollapsed">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Log Out</span>
+        </button>
         <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
           <i :class="sidebarCollapsed ? 'fa-solid fa-angles-right' : 'fa-solid fa-angles-left'"></i>
           <span v-show="!sidebarCollapsed">Collapse</span>
@@ -487,8 +679,11 @@ tr:hover td { background: rgba(0,180,166,0.03); }
           <div class="topbar-subtitle">{{new Date().toLocaleDateString('en-BD', {weekday:'long', year:'numeric', month:'long', day:'numeric'})}}</div>
         </div>
         <div class="topbar-actions">
-          <button class="btn btn-primary" @click="startNewPrescription">
+          <button class="btn btn-primary" v-if="isDoctor" @click="startNewPrescription">
             <i class="fa-solid fa-plus"></i> New Prescription
+          </button>
+          <button class="btn btn-primary" v-else @click="currentPage='new-patient'">
+            <i class="fa-solid fa-user-plus"></i> Register Patient
           </button>
           <div v-if="doctor" style="display:flex;align-items:center;gap:8px;margin-left:8px;">
             <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;color:white">
@@ -590,13 +785,13 @@ tr:hover td { background: rgba(0,180,166,0.03); }
                   <td>{{p.age}} {{p.age_unit}} / {{p.gender==='M'?'♂ Male':p.gender==='F'?'♀ Female':'Other'}}</td>
                   <td><span class="badge badge-gold">{{p.blood_group}}</span></td>
                   <td style="color:var(--muted)">{{p.phone||'—'}}</td>
-                  <td><span class="badge badge-muted">{{p.total_prescriptions||0}} Rx</span></td>
+                  <td><span class="badge badge-muted" v-if="isDoctor">{{p.total_prescriptions||0}} Rx</span><span v-else>—</span></td>
                   <td style="color:var(--muted);font-size:0.8rem">{{formatDate(p.created_at)}}</td>
                   <td>
                     <div style="display:flex;gap:4px">
-                      <button class="btn btn-sm btn-primary" @click="openPatientPrescription(p)" title="New Prescription"><i class="fa-solid fa-file-prescription"></i></button>
+                      <button class="btn btn-sm btn-primary" v-if="isDoctor" @click="openPatientPrescription(p)" title="New Prescription"><i class="fa-solid fa-file-prescription"></i></button>
                       <button class="btn btn-sm btn-secondary" @click="editPatient(p)" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                      <button class="btn btn-sm btn-ghost" @click="viewPatientHistory(p)" title="History"><i class="fa-solid fa-history"></i></button>
+                      <button class="btn btn-sm btn-ghost" v-if="isDoctor" @click="viewPatientHistory(p)" title="History"><i class="fa-solid fa-history"></i></button>
                     </div>
                   </td>
                 </tr>
@@ -883,7 +1078,48 @@ tr:hover td { background: rgba(0,180,166,0.03); }
         </div>
       </div>
 
-      <!-- =========== NEW PRESCRIPTION =========== -->
+      <!-- =========== MANAGE ASSISTANTS (doctor-only) =========== -->
+      <div class="page" v-if="currentPage==='assistants'">
+        <div class="page-header">
+          <div>
+            <h2 style="font-family:'Merriweather',serif;font-weight:400">Manage Assistants</h2>
+            <p style="color:var(--muted);font-size:0.82rem;margin-top:3px">Assistants can register patients and add medicines. They cannot view or create prescriptions, templates, or edit your profile.</p>
+          </div>
+          <button class="btn btn-primary" @click="openAssistantModal"><i class="fa-solid fa-user-plus"></i> Add Assistant</button>
+        </div>
+
+        <div class="card" style="padding:0">
+          <div class="table-container" style="border:none">
+            <table>
+              <thead><tr><th>Name</th><th>Username</th><th>Phone</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+              <tbody>
+                <tr v-for="a in assistantsList" :key="a.id">
+                  <td style="font-weight:600">{{a.name}}</td>
+                  <td style="font-family:'IBM Plex Mono';color:var(--muted)">{{a.username}}</td>
+                  <td style="color:var(--muted)">{{a.phone||'—'}}</td>
+                  <td><span class="badge" :class="a.is_active?'badge-success':'badge-danger'">{{a.is_active?'Active':'Deactivated'}}</span></td>
+                  <td style="color:var(--muted);font-size:0.8rem">{{formatDate(a.created_at)}}</td>
+                  <td>
+                    <div style="display:flex;gap:4px">
+                      <button class="btn btn-sm btn-secondary" @click="openResetPwModal(a)" title="Reset Password"><i class="fa-solid fa-key"></i></button>
+                      <button class="btn btn-sm" :class="a.is_active?'btn-danger':'btn-primary'" @click="toggleAssistantActive(a)" :title="a.is_active?'Deactivate':'Reactivate'">
+                        <i class="fa-solid" :class="a.is_active?'fa-user-slash':'fa-user-check'"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="empty-state" v-if="!assistantsList.length">
+              <i class="fa-solid fa-user-nurse"></i>
+              <h3>No assistants yet</h3>
+              <p>Add an assistant account to let them handle patient registration and medicine entry</p>
+              <button class="btn btn-primary" style="margin-top:12px" @click="openAssistantModal">Add Assistant</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="page" v-if="currentPage==='new-prescription'">
         <div class="page-header">
           <div>
@@ -1002,42 +1238,87 @@ tr:hover td { background: rgba(0,180,166,0.03); }
               <div class="card-title"><i class="fa-solid fa-pills"></i> Medicines (Rx)</div>
               <button class="btn btn-primary btn-sm" @click="addMedicineLine"><i class="fa-solid fa-plus"></i> Add Medicine</button>
             </div>
-            <div class="table-container" v-if="rxForm.medicines.length">
-              <table class="med-table">
-                <thead><tr><th>#</th><th>Medicine Name</th><th>Dose</th><th>Frequency</th><th>Duration</th><th>Timing</th><th>Instructions</th><th></th></tr></thead>
-                <tbody>
-                  <tr v-for="(med, idx) in rxForm.medicines" :key="idx">
-                    <td style="color:var(--muted);font-weight:700">{{idx+1}}</td>
-                    <td style="min-width:160px">
-                      <div class="autocomplete">
-                        <input class="form-control" v-model="med.medicine_name" placeholder="Medicine..." @input="searchMedForLine(idx)" @focus="med.showDropdown=true" @blur="closeMedDropdown(idx)">
-                        <div class="autocomplete-dropdown" v-if="med.showDropdown && med.suggestions && med.suggestions.length">
-                          <div class="autocomplete-item" v-for="s in med.suggestions" :key="s.id" @mousedown="selectMedForLine(idx, s)">
-                            <div>{{s.name}} {{s.strength}}</div>
-                            <div class="item-sub">{{s.form}} · {{s.generic_name}}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style="min-width:80px"><input class="form-control" v-model="med.dose" placeholder="1 tab"></td>
-                    <td style="min-width:120px">
-                      <select class="form-control" v-model="med.frequency">
-                        <option v-for="f in frequencies" :value="f">{{f}}</option>
-                      </select>
-                    </td>
-                    <td style="min-width:90px"><input class="form-control" v-model="med.duration" placeholder="5 days"></td>
-                    <td style="min-width:110px">
-                      <select class="form-control" v-model="med.timing">
-                        <option v-for="t in timings" :value="t">{{t}}</option>
-                      </select>
-                    </td>
-                    <td style="min-width:130px"><input class="form-control" v-model="med.instructions" placeholder="Special notes..."></td>
-                    <td><button class="med-remove-btn" @click="rxForm.medicines.splice(idx,1)"><i class="fa-solid fa-times"></i></button></td>
-                  </tr>
-                </tbody>
-              </table>
+
+            <!-- Column header labels -->
+            <div class="med-row-header" v-if="rxForm.medicines.length">
+              <div class="med-col-num">#</div>
+              <div class="med-col-name">Medicine Name</div>
+              <div class="med-col-dose">Dose</div>
+              <div class="med-col-freq">Frequency</div>
+              <div class="med-col-dur">Duration</div>
+              <div class="med-col-timing">Timing</div>
+              <div class="med-col-note">Instructions</div>
+              <div class="med-col-del"></div>
             </div>
-            <div class="empty-state" v-else style="padding:24px"><i class="fa-solid fa-pills"></i><p>No medicines added yet</p></div>
+
+            <!-- Medicine rows — flexbox, NO table, so dropdown escapes freely -->
+            <div v-if="rxForm.medicines.length">
+              <div class="med-flex-row" v-for="(med, idx) in rxForm.medicines" :key="idx">
+
+                <div class="med-col-num">
+                  <span class="med-num-badge">{{idx+1}}</span>
+                </div>
+
+                <!-- NAME with autocomplete -->
+                <div class="med-col-name" style="position:relative;">
+                  <input class="form-control" v-model="med.medicine_name"
+                    placeholder="Type medicine name..."
+                    @input="searchMedForLine(idx)"
+                    @blur="closeMedDropdown(idx)"
+                    autocomplete="off">
+                  <!-- Dropdown floats freely — no table/overflow parent to clip it -->
+                  <div class="autocomplete-dropdown" v-if="med.showDropdown && med.suggestions && med.suggestions.length">
+                    <div class="autocomplete-item" v-for="s in med.suggestions" :key="s.id" @mousedown="selectMedForLine(idx, s)">
+                      <div class="med-suggestion-name">
+                        {{s.name}} {{s.strength}}
+                        <span class="med-badge">{{s.form}}</span>
+                        <span style="font-size:0.72rem;color:var(--muted);font-weight:400" v-if="s.generic_name">{{s.generic_name}}</span>
+                      </div>
+                      <div class="med-suggestion-pills">
+                        <span class="med-suggestion-pill"><i class="fa-solid fa-pills"></i>{{s.default_dose||'1 tablet'}}</span>
+                        <span class="med-suggestion-pill"><i class="fa-solid fa-clock"></i>{{s.default_frequency||'Twice daily'}}</span>
+                        <span class="med-suggestion-pill"><i class="fa-solid fa-calendar-days"></i>{{s.default_duration||'5 days'}}</span>
+                        <span class="med-suggestion-pill"><i class="fa-solid fa-utensils"></i>{{s.default_timing||'After Meal'}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="med-col-dose">
+                  <input class="form-control" v-model="med.dose" placeholder="1 tab">
+                </div>
+
+                <div class="med-col-freq">
+                  <select class="form-control" v-model="med.frequency">
+                    <option v-for="f in frequencies" :value="f">{{f}}</option>
+                  </select>
+                </div>
+
+                <div class="med-col-dur">
+                  <input class="form-control" v-model="med.duration" placeholder="5 days">
+                </div>
+
+                <div class="med-col-timing">
+                  <select class="form-control" v-model="med.timing">
+                    <option v-for="t in timings" :value="t">{{t}}</option>
+                  </select>
+                </div>
+
+                <div class="med-col-note">
+                  <input class="form-control" v-model="med.instructions" placeholder="Notes...">
+                </div>
+
+                <div class="med-col-del">
+                  <button class="med-remove-btn" @click="rxForm.medicines.splice(idx,1)">
+                    <i class="fa-solid fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="empty-state" v-if="!rxForm.medicines.length" style="padding:24px">
+              <i class="fa-solid fa-pills"></i><p>No medicines added yet</p>
+            </div>
           </div>
 
           <!-- ADVICE & FOLLOW-UP -->
@@ -1245,6 +1526,69 @@ tr:hover td { background: rgba(0,180,166,0.03); }
         </div>
       </div>
 
+      <!-- =========== ADD ASSISTANT MODAL =========== -->
+      <div class="modal-overlay" v-if="showAssistantModal" @click.self="showAssistantModal=false">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-user-nurse"></i> Add Assistant</div>
+            <button class="modal-close" @click="showAssistantModal=false"><i class="fa-solid fa-times"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info" style="margin-bottom:16px">
+              <i class="fa-solid fa-circle-info"></i> This assistant will only be able to register patients and add medicines. They cannot view prescriptions, templates, or your profile.
+            </div>
+            <div class="form-group">
+              <label class="form-label required">Assistant's Full Name</label>
+              <input class="form-control" v-model="assistantForm.name" placeholder="e.g. Rahim Sheikh">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label required">Username</label>
+                <input class="form-control" v-model="assistantForm.username" placeholder="e.g. asst.rahim" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label class="form-label required">Password</label>
+                <input class="form-control" v-model="assistantForm.password" type="password" placeholder="Min 6 characters" autocomplete="new-password">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input class="form-control" v-model="assistantForm.phone" placeholder="+880...">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" @click="showAssistantModal=false">Cancel</button>
+            <button class="btn btn-primary" @click="saveAssistant" :disabled="saving">
+              <span v-if="saving" class="spinner"></span>
+              <i v-else class="fa-solid fa-user-plus"></i> Create Account
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== RESET ASSISTANT PASSWORD MODAL =========== -->
+      <div class="modal-overlay" v-if="showResetPwModal" @click.self="showResetPwModal=false">
+        <div class="modal">
+          <div class="modal-header">
+            <div class="modal-title"><i class="fa-solid fa-key"></i> Reset Password — {{resetPwTarget?.name}}</div>
+            <button class="modal-close" @click="showResetPwModal=false"><i class="fa-solid fa-times"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label required">New Password</label>
+              <input class="form-control" v-model="resetPwValue" type="password" placeholder="Min 6 characters" @keyup.enter="submitResetPw" autocomplete="new-password">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" @click="showResetPwModal=false">Cancel</button>
+            <button class="btn btn-primary" @click="submitResetPw" :disabled="saving">
+              <span v-if="saving" class="spinner"></span>
+              <i v-else class="fa-solid fa-key"></i> Reset Password
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- =========== PRINT MODAL =========== -->
       <div class="modal-overlay" v-if="showPrint" @click.self="showPrint=false">
         <div class="modal modal-xl">
@@ -1373,7 +1717,7 @@ tr:hover td { background: rgba(0,180,166,0.03); }
 </div>
 
 <script>
-const API = 'https://rxmanager-pro-production.up.railway.app/api';
+const API = 'http://localhost:8000/api';
 
 const {createApp, ref, computed, onMounted, watch} = Vue;
 
@@ -1458,22 +1802,84 @@ createApp({
       const map = {
         dashboard: 'Dashboard', patients: 'Patients', 'new-patient': 'Register Patient',
         'new-prescription': 'New Prescription', prescriptions: 'Prescriptions',
-        templates: 'Templates', medicines: 'Medicines', settings: 'Doctor Profile'
+        templates: 'Templates', medicines: 'Medicines', settings: 'Doctor Profile', assistants: 'Manage Assistants'
       };
       return map[currentPage.value] || 'RxManager';
     });
 
-    // ---- API HELPERS ----
-    async function api(method, path, body=null) {
+    // ---- AUTH STATE ----
+    const accessToken  = ref(localStorage.getItem('rx_access')  || '');
+    const refreshToken = ref(localStorage.getItem('rx_refresh') || '');
+    const me = ref(null);              // {role, username, doctor_id, doctor_name, display_name, can_manage_*}
+    const authChecked = ref(false);    // true once we've resolved login state on page load
+    const authScreen = ref('login');   // 'login' | 'register'
+    const authError = ref('');
+    const authBusy = ref(false);
+    const loginForm = ref({ username: '', password: '' });
+    const registerForm = ref({
+      username:'', password:'', confirm_password:'',
+      name:'', qualification:'', specialization:'', registration_no:'',
+      phone:'', email:'', clinic_name:'', clinic_address:'', clinic_phone:'',
+    });
+
+    const isDoctor    = computed(() => me.value?.role === 'doctor');
+    const isAssistant = computed(() => me.value?.role === 'assistant');
+    const isLoggedIn  = computed(() => !!me.value);
+
+    function persistTokens(access, refresh) {
+      accessToken.value = access;
+      if (refresh) refreshToken.value = refresh;
+      localStorage.setItem('rx_access', access);
+      if (refresh) localStorage.setItem('rx_refresh', refresh);
+    }
+    function clearTokens() {
+      accessToken.value = '';
+      refreshToken.value = '';
+      me.value = null;
+      localStorage.removeItem('rx_access');
+      localStorage.removeItem('rx_refresh');
+    }
+
+    async function refreshAccessToken() {
+      if (!refreshToken.value) return false;
+      try {
+        const res = await fetch(`${BASE}/auth/refresh/`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ refresh: refreshToken.value }),
+        });
+        if (!res.ok) return false;
+        const data = await res.json();
+        persistTokens(data.access, data.refresh);
+        return true;
+      } catch { return false; }
+    }
+
+    // ---- API HELPERS (JWT-aware, auto-refresh on 401 once) ----
+    async function api(method, path, body=null, _retried=false) {
       const opts = {
         method,
         headers: {'Content-Type': 'application/json'},
       };
+      if (accessToken.value) opts.headers['Authorization'] = `Bearer ${accessToken.value}`;
       if (body) opts.body = JSON.stringify(body);
       const res = await fetch(`${BASE}/${path}`, opts);
+
+      if (res.status === 401 && !_retried) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) return api(method, path, body, true);
+        clearTokens();
+        authScreen.value = 'login';
+        authError.value = 'Your session expired. Please log in again.';
+        throw new Error('Session expired');
+      }
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || JSON.stringify(err) || 'API error');
+        const msg = err.detail
+          || (typeof err === 'object' ? Object.entries(err).map(([k,v]) => `${k}: ${Array.isArray(v)?v.join(' '):v}`).join(' | ') : null)
+          || 'API error';
+        throw new Error(msg);
       }
       if (res.status === 204) return null;
       return res.json();
@@ -1483,6 +1889,166 @@ createApp({
       const id = Date.now();
       toasts.value.push({id, message, type});
       setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, 3500);
+    }
+
+    // ---- AUTH ACTIONS ----
+    async function fetchMe() {
+      try {
+        const data = await api('GET', 'auth/me/');
+        me.value = data;
+        return true;
+      } catch {
+        clearTokens();
+        return false;
+      }
+    }
+
+    async function doLogin() {
+      authError.value = '';
+      if (!loginForm.value.username || !loginForm.value.password) {
+        authError.value = 'Please enter username and password.';
+        return;
+      }
+      authBusy.value = true;
+      try {
+        const res = await fetch(`${BASE}/auth/login/`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(loginForm.value),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          authError.value = data.detail || 'Invalid username or password.';
+          authBusy.value = false;
+          return;
+        }
+        persistTokens(data.access, data.refresh);
+        await fetchMe();
+        loginForm.value = { username:'', password:'' };
+        await bootstrapAfterLogin();
+        toast(`Welcome back, ${me.value.display_name}!`);
+      } catch (e) {
+        authError.value = 'Could not reach the server. Is the backend running?';
+      }
+      authBusy.value = false;
+    }
+
+    async function doRegister() {
+      authError.value = '';
+      const f = registerForm.value;
+      if (f.password !== f.confirm_password) {
+        authError.value = 'Passwords do not match.';
+        return;
+      }
+      if (!f.username || !f.password || !f.name || !f.registration_no || !f.clinic_name || !f.clinic_address || !f.qualification || !f.specialization || !f.phone) {
+        authError.value = 'Please fill all required fields.';
+        return;
+      }
+      authBusy.value = true;
+      try {
+        const { confirm_password, ...payload } = f;
+        const res = await fetch(`${BASE}/auth/register/`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          authError.value = data.username?.[0] || data.registration_no?.[0] || data.detail
+            || Object.values(data).flat().join(' ') || 'Registration failed.';
+          authBusy.value = false;
+          return;
+        }
+        persistTokens(data.access, data.refresh);
+        await fetchMe();
+        toast(`Welcome to RxManager, Dr. ${data.doctor_name}!`);
+        await bootstrapAfterLogin();
+      } catch (e) {
+        authError.value = 'Could not reach the server. Is the backend running?';
+      }
+      authBusy.value = false;
+    }
+
+    function doLogout() {
+      clearTokens();
+      currentPage.value = 'dashboard';
+      authScreen.value = 'login';
+      toast('Logged out successfully', 'info');
+    }
+
+    async function bootstrapAfterLogin() {
+      // Assistants land on Patients (their main job); Doctors land on Dashboard.
+      currentPage.value = isAssistant.value ? 'patients' : 'dashboard';
+      // Always load the clinic's doctor profile first — both roles need it:
+      // doctors need doctor.value.id to save prescriptions/templates, and assistants
+      // need it for the topbar header + any print preview they trigger.
+      await loadDoctor();
+      if (isDoctor.value) {
+        await loadDashboard();
+        await loadTemplates();
+      } else {
+        await loadPatients();
+      }
+    }
+
+    // ---- ASSISTANT MANAGEMENT (doctor-only) ----
+    const assistantsList = ref([]);
+    const showAssistantModal = ref(false);
+    const assistantForm = ref({ username:'', password:'', name:'', phone:'' });
+    const showResetPwModal = ref(false);
+    const resetPwTarget = ref(null);
+    const resetPwValue = ref('');
+
+    async function loadAssistants() {
+      try {
+        assistantsList.value = await api('GET', 'assistants/');
+      } catch(e) { toast(e.message, 'error'); }
+    }
+
+    function openAssistantModal() {
+      assistantForm.value = { username:'', password:'', name:'', phone:'' };
+      showAssistantModal.value = true;
+    }
+
+    async function saveAssistant() {
+      const f = assistantForm.value;
+      if (!f.username || !f.password || !f.name) { toast('Username, password and name are required', 'error'); return; }
+      if (f.password.length < 6) { toast('Password must be at least 6 characters', 'error'); return; }
+      saving.value = true;
+      try {
+        await api('POST', 'assistants/', f);
+        toast(`Assistant account "${f.username}" created!`);
+        showAssistantModal.value = false;
+        await loadAssistants();
+      } catch(e) { toast(e.message, 'error'); }
+      saving.value = false;
+    }
+
+    async function toggleAssistantActive(a) {
+      try {
+        await api('PATCH', `assistants/${a.id}/`, { is_active: !a.is_active });
+        toast(a.is_active ? 'Assistant deactivated' : 'Assistant reactivated');
+        await loadAssistants();
+      } catch(e) { toast(e.message, 'error'); }
+    }
+
+    function openResetPwModal(a) {
+      resetPwTarget.value = a;
+      resetPwValue.value = '';
+      showResetPwModal.value = true;
+    }
+
+    async function submitResetPw() {
+      if (!resetPwValue.value || resetPwValue.value.length < 6) {
+        toast('Password must be at least 6 characters', 'error'); return;
+      }
+      saving.value = true;
+      try {
+        await api('POST', `assistants/${resetPwTarget.value.id}/reset-password/`, { password: resetPwValue.value });
+        toast(`Password reset for ${resetPwTarget.value.name}`);
+        showResetPwModal.value = false;
+      } catch(e) { toast(e.message, 'error'); }
+      saving.value = false;
     }
 
     // ---- DOCTOR ----
@@ -1706,6 +2272,11 @@ createApp({
     function selectMedForLine(idx, s) {
       const med = rxForm.value.medicines[idx];
       med.medicine_name = `${s.name} ${s.strength}`.trim();
+      // Auto-fill entire row from medicine defaults
+      if (s.default_dose)      med.dose      = s.default_dose;
+      if (s.default_frequency) med.frequency = s.default_frequency;
+      if (s.default_duration)  med.duration  = s.default_duration;
+      if (s.default_timing)    med.timing    = s.default_timing;
       med.suggestions = [];
       med.showDropdown = false;
     }
@@ -1958,22 +2529,45 @@ createApp({
 
     // ---- WATCHERS ----
     watch(currentPage, async (p) => {
-      if (p === 'dashboard') await loadDashboard();
+      if (p === 'dashboard' && isDoctor.value) await loadDashboard();
       if (p === 'patients') await loadPatients();
-      if (p === 'prescriptions') await loadPrescriptions();
-      if (p === 'templates') { await loadTemplates(); await loadDiseases(); }
+      if (p === 'prescriptions' && isDoctor.value) await loadPrescriptions();
+      if (p === 'templates' && isDoctor.value) { await loadTemplates(); await loadDiseases(); }
       if (p === 'medicines') await loadMedicines();
-      if (p === 'settings') await loadDoctor();
+      if (p === 'settings' && isDoctor.value) await loadDoctor();
+      if (p === 'assistants' && isDoctor.value) await loadAssistants();
     });
 
-    // ---- INIT ----
+    // ---- INIT: resolve auth state before showing anything ----
     onMounted(async () => {
-      await loadDoctor();
-      await loadDashboard();
-      await loadTemplates();
+      if (accessToken.value) {
+        const ok = await fetchMe();
+        if (ok) {
+          // Both roles need doctor.value populated: doctors to save prescriptions/templates,
+          // assistants for the topbar clinic header and print previews.
+          await loadDoctor();
+          if (isDoctor.value) {
+            await loadDashboard();
+            await loadTemplates();
+            currentPage.value = 'dashboard';
+          } else {
+            await loadPatients();
+            currentPage.value = 'patients';
+          }
+        }
+      }
+      authChecked.value = true;
     });
 
     return {
+      // auth
+      accessToken, me, authChecked, authScreen, authError, authBusy,
+      loginForm, registerForm, isDoctor, isAssistant, isLoggedIn,
+      doLogin, doRegister, doLogout,
+      assistantsList, showAssistantModal, assistantForm,
+      loadAssistants, openAssistantModal, saveAssistant, toggleAssistantActive,
+      showResetPwModal, resetPwTarget, resetPwValue, openResetPwModal, submitResetPw,
+      // existing app state
       sidebarCollapsed, currentPage, prevPage, saving, toasts, pageTitle,
       doctor, doctorForm, saveDoctor,
       stats, loadDashboard,

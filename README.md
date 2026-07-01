@@ -1,197 +1,130 @@
-# RxManager Pro — Doctor Prescription Management System
+# RxManager Pro — Multi-Doctor Prescription Management System
 
-A production-level prescription management system built with **Django REST Framework** (backend) and **Vue.js 3** (frontend). Designed for solo-practice and clinic doctors to manage patients, create prescriptions, build reusable templates by disease, and print professional prescriptions.
+A production-grade prescription management system supporting **multiple doctors**, each with their own isolated clinic data, and the ability for each doctor to create **assistant accounts** for delegated data entry.
 
----
+## Architecture
 
-## ✨ Features
-
-| Feature | Description |
-|---|---|
-| 🏥 **Doctor Profile** | Clinic header info printed on every prescription |
-| 👤 **Patient Registration** | Auto-generated Patient IDs (PT00001), full medical history |
-| 📋 **Prescription Creation** | Vitals, diagnosis, multi-medicine Rx with inline autocomplete |
-| 🗂️ **Template System** | Save any prescription as a reusable disease template |
-| ✏️ **Template Loading** | Load template → edit freely → original template unchanged |
-| 🖨️ **Professional Print** | Branded prescription prints in a new window |
-| 📜 **Patient History** | Full Rx history per patient with quick reprint |
-| 📊 **Dashboard** | Live stats: today's Rx, month total, recent activity |
-| 💊 **Medicine Database** | Searchable medicine list with autocomplete in Rx form |
+- **Backend:** Django REST Framework + JWT authentication (`djangorestframework-simplejwt`)
+- **Frontend:** Vue 3 (single-file, no build step — open `frontend/index.html` directly)
+- **Database:** SQLite (swap to PostgreSQL/MySQL for production by editing `rxmanager/settings.py`)
 
 ---
 
-## 🛠 Tech Stack
+## Role-Based Access Control
 
-```
-Backend  : Django 4.x + Django REST Framework + django-cors-headers
-Database : SQLite (zero-config, swap to PostgreSQL for production)
-Frontend : Vue.js 3 (CDN, no build step required)
-Fonts    : IBM Plex Sans + Merriweather (Google Fonts)
-Icons    : Font Awesome 6
-Print    : Native browser print via popup window
-```
+Two account types exist, both logging into the **same** login screen:
+
+| Capability | Doctor | Assistant |
+|---|:---:|:---:|
+| View Dashboard | ✅ | ❌ |
+| Register / edit Patients | ✅ | ✅ |
+| Add / edit Medicines (catalogue) | ✅ | ✅ |
+| Create / view Prescriptions | ✅ | ❌ |
+| Create / edit Templates | ✅ | ❌ |
+| Manage Assistant accounts | ✅ | ❌ |
+| Edit Doctor / Clinic profile | ✅ | ❌ |
+
+**Enforcement is two-layered:**
+1. **Frontend** — the sidebar nav only renders the sections a role is allowed to see (`isDoctor` / `isAssistant` computed flags drive `v-if` throughout `index.html`).
+2. **Backend** — every API endpoint independently checks the caller's role via `core/permissions.py` (`IsDoctorOnly`, `IsDoctorOrAssistantDataEntry`). The frontend gating is a UX convenience; the backend permissions are the actual security boundary, since a determined user could otherwise call the API directly.
+
+### Data isolation
+
+Every `Patient`, `Prescription`, and `PrescriptionTemplate` row is scoped to a specific `Doctor` via a foreign key. All querysets in `core/views.py` filter by `doctor=get_doctor_for_user(request.user)`, so:
+- Doctor A can never see Doctor B's patients, prescriptions, or templates, even via direct API calls with a valid token.
+- An Assistant only ever sees data belonging to the one Doctor who created their account (`Assistant.doctor` foreign key).
+
+The `Medicine` catalogue is the one exception — it's a shared, global drug database (like a real pharmacy reference), not scoped per-doctor.
 
 ---
 
-## 🚀 Quick Start
+## How Account Creation Works
 
-### 1. Install Python dependencies
+1. **A Doctor self-registers** via the "Register as Doctor" tab on the login screen. This is the *only* way to create a Doctor account — there is no admin approval step needed for the demo, though you could add one.
+2. **Once logged in, a Doctor creates Assistant accounts** from the "Manage Assistants" page (sidebar → Settings section). The doctor sets the assistant's username and initial password.
+3. **Assistants cannot self-register.** The registration tab is doctor-only by design — this matches the real-world workflow where a clinic owner (doctor) is the one who decides to hire and onboard staff.
+4. A Doctor can **deactivate** an assistant (soft-delete — preserves historical data attribution) or **reset their password** at any time from the same page.
+
+---
+
+## Quick Start
+
+### 1. Backend
+
 ```bash
-pip install django djangorestframework django-cors-headers Pillow reportlab
+cd backend
+pip install -r requirements.txt
+python manage.py migrate      # only needed if you deleted db.sqlite3
+python manage.py runserver
 ```
 
-### 2. Start both servers (one command)
+The included `db.sqlite3` already has seed data loaded. To regenerate it from scratch:
+
 ```bash
-cd rx-manager
-bash start.sh
+rm db.sqlite3
+python manage.py migrate
+python seed_data.py
 ```
 
-This starts:
-- Django API → `http://localhost:8000/api/`
-- Vue.js Frontend → `http://localhost:5500/`
+### 2. Frontend
 
-### 3. Open the app
+Just open `frontend/index.html` in a browser, or serve it with any static file server:
+
+```bash
+cd frontend
+python -m http.server 5500
+# then visit http://localhost:5500
 ```
-http://localhost:5500
-```
+
+The frontend talks to the backend at `http://localhost:8000/api` — this is hardcoded near the top of the `<script>` block in `index.html` as `const API = '...'`. Change it if you deploy the backend elsewhere.
 
 ---
 
-## 🗂️ Project Structure
+## Seeded Demo Accounts
 
-```
-rx-manager/
-├── backend/                    # Django project
-│   ├── core/
-│   │   ├── models.py           # All data models
-│   │   ├── serializers.py      # DRF serializers
-│   │   ├── views.py            # API ViewSets
-│   │   ├── urls.py             # API routing
-│   │   └── admin.py            # Django admin
-│   ├── rxmanager/
-│   │   ├── settings.py
-│   │   └── urls.py
-│   ├── db.sqlite3              # Database (auto-created)
-│   ├── seed_data.py            # Sample data loader
-│   └── manage.py
-├── frontend/
-│   └── index.html              # Full Vue.js SPA (single file)
-├── start.sh                    # One-command launcher
-└── README.md
-```
+| Role | Username | Password | Clinic |
+|---|---|---|---|
+| Doctor | `dr.rahman` | `doctor123` | Rahman Medical Center |
+| Assistant (works for Dr. Rahman) | `asst.rahim` | `assistant123` | — |
+| Doctor (separate clinic, proves data isolation) | `dr.sultana` | `doctor123` | Sultana Women's Care |
+
+Log in as `dr.sultana` and you'll see **completely different** patients and templates than `dr.rahman` — this demonstrates the per-doctor data isolation working correctly.
 
 ---
 
-## 📡 API Endpoints
+## API Reference (auth-related endpoints)
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/dashboard/` | Stats + recent activity |
-| CRUD | `/api/doctors/` | Doctor profile |
-| GET | `/api/doctors/primary/` | Fetch first doctor |
-| CRUD | `/api/patients/` | Patient management |
-| GET | `/api/patients/?search=name` | Search patients |
-| GET | `/api/patients/{id}/prescriptions/` | Patient Rx history |
-| CRUD | `/api/templates/` | Prescription templates |
-| POST | `/api/templates/{id}/clone/` | Clone template (no original change) |
-| GET | `/api/templates/diseases/` | Distinct disease list |
-| CRUD | `/api/prescriptions/` | Prescriptions |
-| GET | `/api/prescriptions/{id}/print_data/` | Full print payload |
-| CRUD | `/api/medicines/` | Medicine database |
+| Method | Endpoint | Who can call it | Purpose |
+|---|---|---|---|
+| POST | `/api/auth/register/` | Anyone | Doctor self-registration → returns JWT pair |
+| POST | `/api/auth/login/` | Anyone | Login (doctor or assistant) → returns JWT pair + role info |
+| POST | `/api/auth/refresh/` | Anyone with a valid refresh token | Get a new access token |
+| GET | `/api/auth/me/` | Any logged-in user | Returns role + capability flags, drives frontend UI |
+| GET/POST | `/api/assistants/` | Doctor only | List / create assistants under your clinic |
+| PATCH/DELETE | `/api/assistants/{id}/` | Doctor only | Update or deactivate an assistant |
+| POST | `/api/assistants/{id}/reset-password/` | Doctor only | Reset an assistant's password |
+
+All other endpoints (`/api/patients/`, `/api/prescriptions/`, `/api/templates/`, `/api/medicines/`, `/api/doctors/`, `/api/dashboard/`) require a `Authorization: Bearer <access_token>` header and are subject to the role checks described above.
 
 ---
 
-## 🖥️ Django Admin
+## File Structure
 
 ```
-URL:      http://localhost:8000/admin
-Username: admin
-Password: admin123
-```
-
----
-
-## 🔄 Template Workflow (Key Feature)
-
-```
-1. Create Template  →  Name it + Disease + Medicines + Advice
-2. Use Template     →  Loads into Prescription form as editable copy
-3. Edit Freely      →  Change doses, add/remove medicines, update advice
-4. Save Prescription →  Template usage count increments; original unchanged
-5. Clone Template   →  Make a variation without editing the original
-```
-
----
-
-## 🖨️ Print Preview
-
-Prescriptions print with:
-- Doctor name, qualifications, registration number
-- Clinic name and address (header)
-- Patient details: ID, age, gender, blood group
-- Visit date and Rx number
-- Vitals (BP, pulse, temp, weight)
-- Numbered medicine list with dose, frequency, duration, timing
-- Advice section
-- Allergy warning (if any)
-- Follow-up date and doctor signature line
-
----
-
-## 🔧 Production Deployment
-
-### Switch to PostgreSQL
-In `backend/rxmanager/settings.py`:
-```python
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'rxmanager',
-        'USER': 'postgres',
-        'PASSWORD': 'your_password',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-```
-
-### Security for production
-```python
-DEBUG = False
-SECRET_KEY = os.environ.get('SECRET_KEY')
-ALLOWED_HOSTS = ['yourdomain.com']
-CORS_ALLOWED_ORIGINS = ['https://yourdomain.com']
-```
-
-### Frontend API URL
-In `frontend/index.html`, change line:
-```javascript
-const API = 'http://localhost:8000/api';
-// → change to your production domain
-const API = 'https://api.yourdomain.com/api';
-```
-
----
-
-## 📦 Seed Data Included
-
-On first run, the following demo data is pre-loaded:
-- **1 Doctor**: Dr. Mohammed Rahman (General Medicine, Dhaka)
-- **15 Medicines**: Napa, Azimax, Seclo, Losartan, Metformin, etc.
-- **5 Templates**: URTI, Pharyngitis, Hypertension, Diabetes, Gastritis
-- **5 Patients**: Sample patients with medical history
-- **1 Sample Prescription**: Linked to diabetes template
-
----
-
-## 📋 Data Models
-
-```
-Doctor          → Clinic info for prescription header
-Patient         → Auto-ID, age, gender, blood group, allergies, history
-Medicine        → Brand name, generic, form, strength
-PrescriptionTemplate → Disease templates with medicine list
-  └── TemplateMedicine → Individual medicine rows in template
-Prescription    → Visit record linked to doctor + patient
-  └── PrescriptionMedicine → Individual medicine rows in Rx
+backend/
+  core/
+    models.py            — Doctor, Assistant, Patient, Medicine, Prescription, Template models
+    permissions.py        — Role-checking permission classes (the real security boundary)
+    auth_serializers.py    — Registration / assistant-creation serializers
+    auth_views.py          — Login, register, /me, assistant CRUD endpoints
+    serializers.py         — Standard CRUD serializers (Patient, Prescription, etc.)
+    views.py                — Standard CRUD viewsets, all doctor-scoped
+    admin.py                 — Django admin registrations
+  rxmanager/
+    settings.py               — JWT config (SIMPLE_JWT), installed apps
+    urls.py                    — Root URL config
+  seed_data.py                  — Creates demo doctors/assistant/patients/templates
+frontend/
+  index.html                     — Complete Vue 3 app: login/register screen + main app,
+                                    gated by `isLoggedIn` / `isDoctor` / `isAssistant`
 ```

@@ -1,33 +1,32 @@
 #!/bin/bash
+# RxManager Pro — starts the Django backend on :8000
+# Frontend is a static file, just open frontend/index.html in a browser
+# (or run: cd frontend && python -m http.server 5500)
+
+set -e
+cd "$(dirname "$0")/backend"
+
+if [ ! -d "venv" ]; then
+  echo "Creating virtual environment..."
+  python3 -m venv venv
+fi
+
+source venv/bin/activate
+pip install -q -r requirements.txt
+
+if [ ! -f "db.sqlite3" ]; then
+  echo "No database found — running migrations and seeding demo data..."
+  python manage.py migrate
+  python seed_data.py
+fi
+
 echo ""
-echo "╔══════════════════════════════════════════════════════╗"
-echo "║           RxManager Pro — Prescription System       ║"
-echo "╚══════════════════════════════════════════════════════╝"
+echo "Starting Django backend on http://localhost:8000"
+echo "Open frontend/index.html in your browser to use the app."
+echo ""
+echo "Demo logins:"
+echo "  Doctor:    dr.rahman / doctor123"
+echo "  Assistant: asst.rahim / assistant123"
 echo ""
 
-cd /home/claude/rx-manager/backend
-
-# Start Django
-echo "▶ Starting Django API server on port 8000..."
-python manage.py runserver 0.0.0.0:8000 &
-DJANGO_PID=$!
-echo "  ✅ Django PID: $DJANGO_PID"
-
-# Start frontend server
-cd /home/claude/rx-manager/frontend
-echo "▶ Starting Frontend server on port 5500..."
-python3 -m http.server 5500 &
-FRONT_PID=$!
-echo "  ✅ Frontend PID: $FRONT_PID"
-
-echo ""
-echo "╔══════════════════════════════════════════════════════╗"
-echo "║  🌐 Frontend:  http://localhost:5500                ║"
-echo "║  🔌 API:       http://localhost:8000/api            ║"
-echo "║  🛠  Admin:    http://localhost:8000/admin          ║"
-echo "╚══════════════════════════════════════════════════════╝"
-echo ""
-echo "Press Ctrl+C to stop all servers"
-
-trap "kill $DJANGO_PID $FRONT_PID 2>/dev/null; echo 'Servers stopped.'" EXIT
-wait
+python manage.py runserver

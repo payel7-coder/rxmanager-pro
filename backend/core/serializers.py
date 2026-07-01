@@ -6,6 +6,7 @@ class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doctor
         fields = '__all__'
+        read_only_fields = ['user']
 
 
 class PatientSerializer(serializers.ModelSerializer):
@@ -14,7 +15,7 @@ class PatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Patient
         fields = '__all__'
-        read_only_fields = ['patient_id', 'created_at', 'updated_at']
+        read_only_fields = ['patient_id', 'doctor', 'created_at', 'updated_at']
 
     def get_total_prescriptions(self, obj):
         return obj.prescriptions.count()
@@ -40,6 +41,7 @@ class PrescriptionTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrescriptionTemplate
         fields = '__all__'
+        read_only_fields = ['doctor']
 
     def get_doctor_name(self, obj):
         return str(obj.doctor)
@@ -51,6 +53,7 @@ class PrescriptionTemplateWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrescriptionTemplate
         fields = '__all__'
+        read_only_fields = ['doctor']
 
     def create(self, validated_data):
         medicines_data = validated_data.pop('medicines', [])
@@ -90,17 +93,13 @@ class PrescriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Prescription
         fields = '__all__'
+        read_only_fields = ['doctor']
 
-    def get_patient_name(self, obj):
-        return obj.patient.name
-    def get_patient_age(self, obj):
-        return f"{obj.patient.age} {obj.patient.age_unit}"
-    def get_patient_gender(self, obj):
-        return obj.patient.get_gender_display()
-    def get_patient_id_no(self, obj):
-        return obj.patient.patient_id
-    def get_doctor_name(self, obj):
-        return str(obj.doctor)
+    def get_patient_name(self, obj): return obj.patient.name
+    def get_patient_age(self, obj): return f"{obj.patient.age} {obj.patient.age_unit}"
+    def get_patient_gender(self, obj): return obj.patient.get_gender_display()
+    def get_patient_id_no(self, obj): return obj.patient.patient_id
+    def get_doctor_name(self, obj): return str(obj.doctor)
 
 
 class PrescriptionWriteSerializer(serializers.ModelSerializer):
@@ -109,6 +108,7 @@ class PrescriptionWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Prescription
         fields = '__all__'
+        read_only_fields = ['doctor']
 
     def create(self, validated_data):
         medicines_data = validated_data.pop('medicines', [])
