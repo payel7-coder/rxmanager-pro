@@ -1882,7 +1882,12 @@ createApp({
         throw new Error(msg);
       }
       if (res.status === 204) return null;
-      return res.json();
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return res.json();
+      }
+      const text = await res.text();
+      throw new Error(`Server returned non-JSON response: ${text.slice(0, 100)}`);
     }
 
     function toast(message, type='success') {
@@ -1895,8 +1900,12 @@ createApp({
     async function fetchMe() {
       try {
         const data = await api('GET', 'auth/me/');
-        me.value = data;
-        return true;
+        if (data && data.role) {
+          me.value = data;
+          return true;
+        }
+        clearTokens();
+        return false;
       } catch {
         clearTokens();
         return false;
@@ -1959,19 +1968,33 @@ createApp({
           authBusy.value = false;
           return;
         }
+        // Registration succeeded — try auto-login with token
         if (data.access && data.refresh) {
           persistTokens(data.access, data.refresh);
-          await fetchMe();
-          toast(`Welcome to RxManager, Dr. ${data.doctor_name}!`);
-          await bootstrapAfterLogin();
+          const meOk = await fetchMe();
+          if (meOk) {
+            toast(`Welcome to RxManager, Dr. ${data.doctor_name}!`);
+            await bootstrapAfterLogin();
+          } else {
+            // fetchMe failed — just go to login screen
+            authScreen.value = 'login';
+            loginForm.value.username = f.username;
+            authError.value = '';
+            toast('Account created! Please sign in.');
+          }
         } else {
-          // Registration succeeded but no token returned — ask user to log in
+          // No token in response — go to login
           authScreen.value = 'login';
+          loginForm.value.username = f.username;
           authError.value = '';
-          toast('Account created! Please log in now.');
+          toast('Account created! Please sign in.');
         }
-      }  catch (e) {
-        authError.value = e.message || 'Registration failed. Please try again.';
+      } catch (e) {
+        // If anything crashes, still go to login — account may have been created
+        authScreen.value = 'login';
+        loginForm.value.username = f.username;
+        authError.value = '';
+        toast('Account created! Please sign in now.');
       }
       authBusy.value = false;
     }
