@@ -1928,7 +1928,7 @@ createApp({
         await bootstrapAfterLogin();
         toast(`Welcome back, ${me.value.display_name}!`);
       } catch (e) {
-        authError.value = 'Could not reach the server. Is the backend running?';
+        authError.value = e.message || 'Could not reach the server. Is the backend running?';
       }
       authBusy.value = false;
     }
@@ -1959,12 +1959,19 @@ createApp({
           authBusy.value = false;
           return;
         }
-        persistTokens(data.access, data.refresh);
-        await fetchMe();
-        toast(`Welcome to RxManager, Dr. ${data.doctor_name}!`);
-        await bootstrapAfterLogin();
-      } catch (e) {
-        authError.value = 'Could not reach the server. Is the backend running?';
+        if (data.access && data.refresh) {
+          persistTokens(data.access, data.refresh);
+          await fetchMe();
+          toast(`Welcome to RxManager, Dr. ${data.doctor_name}!`);
+          await bootstrapAfterLogin();
+        } else {
+          // Registration succeeded but no token returned — ask user to log in
+          authScreen.value = 'login';
+          authError.value = '';
+          toast('Account created! Please log in now.');
+        }
+      }  catch (e) {
+        authError.value = e.message || 'Registration failed. Please try again.';
       }
       authBusy.value = false;
     }
