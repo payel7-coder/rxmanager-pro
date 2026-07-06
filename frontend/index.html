@@ -422,6 +422,54 @@ tr:hover td { background: rgba(0,180,166,0.03); }
 .med-suggestion-pills { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
 .med-suggestion-pill { font-size:0.72rem; padding:2px 8px; border-radius:10px; border:1px solid var(--border); color:var(--muted); display:flex; align-items:center; gap:3px; }
 .med-suggestion-pill i { font-size:0.65rem; color:var(--teal); }
+/* ===== QUICK TAGS (chief complaint, diagnosis, advice chips) ===== */
+.quick-tags { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+.quick-tag {
+  padding:4px 10px; border-radius:16px; font-size:0.75rem; cursor:pointer;
+  border:1px solid var(--border); color:var(--text-muted);
+  background:var(--surface2); transition:all 0.15s;
+  font-family:'IBM Plex Sans',sans-serif; white-space:nowrap;
+}
+.quick-tag:hover { border-color:var(--teal); color:var(--teal); background:rgba(0,180,166,0.08); }
+.quick-tag.active { border-color:var(--teal); color:var(--teal); background:rgba(0,180,166,0.15); font-weight:600; }
+.quick-tag.gold { border-color:var(--gold); color:var(--gold); background:rgba(232,184,75,0.08); }
+.quick-tag.gold:hover, .quick-tag.gold.active { background:rgba(232,184,75,0.18); }
+/* Normal value quick-fill buttons */
+.vital-quick { display:flex; gap:4px; margin-top:4px; flex-wrap:wrap; }
+.vital-btn {
+  padding:2px 8px; border-radius:10px; font-size:0.68rem; cursor:pointer;
+  border:1px solid var(--border); color:var(--muted); background:none;
+  transition:all 0.15s; font-family:'IBM Plex Sans',sans-serif;
+}
+.vital-btn:hover { border-color:var(--success); color:var(--success); }
+/* Follow-up quick buttons */
+.followup-btns { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+.followup-btn {
+  padding:5px 12px; border-radius:8px; font-size:0.78rem; cursor:pointer;
+  border:1px solid var(--border); color:var(--muted); background:var(--surface2);
+  transition:all 0.15s; font-family:'IBM Plex Sans',sans-serif;
+}
+.followup-btn:hover { border-color:var(--teal); color:var(--teal); background:rgba(0,180,166,0.08); }
+.followup-btn.active { border-color:var(--teal); color:var(--teal); background:rgba(0,180,166,0.15); font-weight:600; }
+/* Advice chips */
+.advice-chips { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+.advice-chip {
+  padding:4px 10px; border-radius:16px; font-size:0.75rem; cursor:pointer;
+  border:1px solid var(--border); color:var(--text-muted); background:var(--surface2);
+  transition:all 0.15s; font-family:'IBM Plex Sans',sans-serif;
+}
+.advice-chip:hover { border-color:var(--info); color:var(--info); background:rgba(59,130,246,0.08); }
+.advice-chip.selected { border-color:var(--info); color:var(--info); background:rgba(59,130,246,0.15); font-weight:600; }
+/* Diagnosis search dropdown */
+.dx-dropdown {
+  position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:99999;
+  background:var(--surface2); border:1px solid var(--teal); border-radius:10px;
+  max-height:220px; overflow-y:auto; box-shadow:0 16px 40px rgba(0,0,0,0.7);
+}
+.dx-item { padding:8px 14px; cursor:pointer; border-bottom:1px solid var(--border); font-size:0.84rem; }
+.dx-item:hover { background:rgba(0,180,166,0.1); color:var(--teal); }
+.dx-item:last-child { border-bottom:none; }
+.dx-item .dx-sub { font-size:0.72rem; color:var(--muted); margin-top:2px; }
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -1194,7 +1242,10 @@ tr:hover td { background: rgba(0,180,166,0.03); }
 
           <!-- VITALS -->
           <div class="card" style="margin-bottom:16px">
-            <div class="card-title" style="margin-bottom:14px"><i class="fa-solid fa-heart-pulse"></i> Vitals & Date</div>
+            <div class="card-header" style="margin-bottom:12px">
+              <div class="card-title"><i class="fa-solid fa-heart-pulse"></i> Vitals & Date</div>
+              <button class="btn btn-sm btn-secondary" @click="fillNormalVitals" title="Fill all normal values"><i class="fa-solid fa-check-double"></i> All Normal</button>
+            </div>
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Visit Date</label>
@@ -1203,14 +1254,32 @@ tr:hover td { background: rgba(0,180,166,0.03); }
               <div class="form-group">
                 <label class="form-label">Blood Pressure</label>
                 <input class="form-control" v-model="rxForm.blood_pressure" placeholder="120/80 mmHg">
+                <div class="vital-quick">
+                  <button class="vital-btn" @click="rxForm.blood_pressure='110/70 mmHg'">110/70</button>
+                  <button class="vital-btn" @click="rxForm.blood_pressure='120/80 mmHg'">120/80</button>
+                  <button class="vital-btn" @click="rxForm.blood_pressure='130/85 mmHg'">130/85</button>
+                  <button class="vital-btn" @click="rxForm.blood_pressure='140/90 mmHg'">140/90</button>
+                </div>
               </div>
               <div class="form-group">
                 <label class="form-label">Pulse</label>
                 <input class="form-control" v-model="rxForm.pulse" placeholder="72 bpm">
+                <div class="vital-quick">
+                  <button class="vital-btn" @click="rxForm.pulse='68 bpm'">68</button>
+                  <button class="vital-btn" @click="rxForm.pulse='72 bpm'">72</button>
+                  <button class="vital-btn" @click="rxForm.pulse='80 bpm'">80</button>
+                  <button class="vital-btn" @click="rxForm.pulse='90 bpm'">90</button>
+                </div>
               </div>
               <div class="form-group">
-                <label class="form-label">Temp</label>
+                <label class="form-label">Temperature</label>
                 <input class="form-control" v-model="rxForm.temperature" placeholder="98.6°F">
+                <div class="vital-quick">
+                  <button class="vital-btn" @click="rxForm.temperature='98.6°F'">Normal</button>
+                  <button class="vital-btn" @click="rxForm.temperature='99.5°F'">99.5°F</button>
+                  <button class="vital-btn" @click="rxForm.temperature='100.4°F'">100.4°F</button>
+                  <button class="vital-btn" @click="rxForm.temperature='101°F'">101°F</button>
+                </div>
               </div>
               <div class="form-group">
                 <label class="form-label">Weight</label>
@@ -1222,13 +1291,45 @@ tr:hover td { background: rgba(0,180,166,0.03); }
           <!-- COMPLAINT & DIAGNOSIS -->
           <div class="card" style="margin-bottom:16px">
             <div class="card-title" style="margin-bottom:14px"><i class="fa-solid fa-stethoscope"></i> Clinical Notes</div>
+
+            <!-- Chief Complaint with quick tags -->
             <div class="form-group">
-              <label class="form-label">Chief Complaint</label>
-              <textarea class="form-control" v-model="rxForm.chief_complaint" placeholder="Patient's main complaints..." rows="2"></textarea>
+              <label class="form-label" style="display:flex;justify-content:space-between">
+                <span>Chief Complaint</span>
+                <span style="font-size:0.72rem;color:var(--muted)">Click tags to add</span>
+              </label>
+              <div class="quick-tags" style="margin-bottom:6px">
+                <button class="quick-tag" v-for="c in complaintTags" :key="c"
+                  :class="{active: rxForm.chief_complaint.includes(c)}"
+                  @click="toggleComplaint(c)">{{c}}</button>
+              </div>
+              <textarea class="form-control" v-model="rxForm.chief_complaint" placeholder="Click tags above or type here..." rows="2"></textarea>
             </div>
+
+            <!-- Diagnosis with search -->
             <div class="form-group">
-              <label class="form-label required">Diagnosis</label>
-              <textarea class="form-control" v-model="rxForm.diagnosis" placeholder="Clinical diagnosis..." rows="2"></textarea>
+              <label class="form-label required" style="display:flex;justify-content:space-between">
+                <span>Diagnosis</span>
+                <span style="font-size:0.72rem;color:var(--muted)">Type or click common diagnoses</span>
+              </label>
+              <div class="quick-tags" style="margin-bottom:6px">
+                <button class="quick-tag" v-for="d in commonDiagnoses.slice(0,8)" :key="d.name"
+                  :class="{active: rxForm.diagnosis===d.name}"
+                  @click="selectDiagnosis(d)">{{d.name}}</button>
+              </div>
+              <div style="position:relative">
+                <input class="form-control" v-model="rxForm.diagnosis"
+                  placeholder="Type diagnosis or click above..."
+                  @input="searchDiagnosis"
+                  @blur="closeDxDropdown"
+                  autocomplete="off">
+                <div class="dx-dropdown" v-if="dxResults.length">
+                  <div class="dx-item" v-for="d in dxResults" :key="d.name" @mousedown="selectDiagnosis(d)">
+                    <div>{{d.name}}</div>
+                    <div class="dx-sub" v-if="d.complaint">Typical complaint: {{d.complaint}}</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1324,19 +1425,39 @@ tr:hover td { background: rgba(0,180,166,0.03); }
           <!-- ADVICE & FOLLOW-UP -->
           <div class="card" style="margin-bottom:16px">
             <div class="card-title" style="margin-bottom:14px"><i class="fa-solid fa-circle-info"></i> Advice & Follow-up</div>
+
+            <!-- Advice with clickable chips -->
             <div class="form-group">
-              <label class="form-label">Advice / Instructions</label>
-              <textarea class="form-control" v-model="rxForm.advice" placeholder="Diet advice, lifestyle recommendations, warnings..." rows="3"></textarea>
+              <label class="form-label" style="display:flex;justify-content:space-between">
+                <span>Advice / Instructions</span>
+                <span style="font-size:0.72rem;color:var(--muted)">Click chips to add</span>
+              </label>
+              <div class="advice-chips" style="margin-bottom:6px">
+                <button class="advice-chip"
+                  v-for="a in adviceChips" :key="a"
+                  :class="{selected: rxForm.advice.includes(a)}"
+                  @click="toggleAdvice(a)">{{a}}</button>
+              </div>
+              <textarea class="form-control" v-model="rxForm.advice" placeholder="Click chips above or type custom advice..." rows="2"></textarea>
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Follow-up Date</label>
-                <input class="form-control" v-model="rxForm.follow_up_date" type="date">
+
+            <!-- Follow-up quick buttons -->
+            <div class="form-group">
+              <label class="form-label">Follow-up</label>
+              <div class="followup-btns">
+                <button class="followup-btn" v-for="f in followUpOptions" :key="f.label"
+                  :class="{active: rxForm.follow_up_date === f.date}"
+                  @click="setFollowUp(f.days)">{{f.label}}</button>
+                <button class="followup-btn" style="color:var(--danger);border-color:rgba(239,68,68,0.3)"
+                  v-if="rxForm.follow_up_date"
+                  @click="rxForm.follow_up_date=''">✕ Clear</button>
               </div>
-              <div class="form-group">
-                <label class="form-label">Additional Notes</label>
-                <input class="form-control" v-model="rxForm.notes" placeholder="Any extra notes...">
-              </div>
+              <input class="form-control" v-model="rxForm.follow_up_date" type="date" style="margin-top:4px">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Additional Notes</label>
+              <input class="form-control" v-model="rxForm.notes" placeholder="Any extra notes...">
             </div>
           </div>
 
@@ -1717,7 +1838,7 @@ tr:hover td { background: rgba(0,180,166,0.03); }
 </div>
 
 <script>
-const API = 'https://rxmanager-pro-production.up.railway.app/api';
+const API = 'http://localhost:8000/api';
 
 const {createApp, ref, computed, onMounted, watch} = Vue;
 
@@ -1796,6 +1917,140 @@ createApp({
     // Lookup data
     const frequencies = ['Once daily','Twice daily','Thrice daily','Four times daily','Every 6 hours','Every 8 hours','Every 12 hours','Weekly','As needed'];
     const timings = ['Before Meal','After Meal','With Meal','Empty Stomach','At Bedtime','As Needed'];
+
+    // ---- SMART QUICK-FILL DATA ----
+    const complaintTags = [
+      'Fever','Headache','Cough','Cold','Sore Throat','Body Ache',
+      'Chest Pain','Shortness of Breath','Nausea','Vomiting','Diarrhea',
+      'Abdominal Pain','Back Pain','Joint Pain','Dizziness','Fatigue',
+      'Loss of Appetite','Weakness','Skin Rash','Eye Problem','Ear Pain',
+      'Toothache','Leg Swelling','Palpitation','Burning Urination',
+    ];
+
+    const commonDiagnoses = [
+      { name:'URTI / Common Cold', complaint:'Fever, runny nose, sore throat' },
+      { name:'Viral Fever', complaint:'High fever, body ache, weakness' },
+      { name:'Acute Pharyngitis', complaint:'Sore throat, fever, difficulty swallowing' },
+      { name:'Acute Tonsillitis', complaint:'Sore throat, swollen tonsils, fever' },
+      { name:'Bronchitis', complaint:'Cough, chest tightness, low grade fever' },
+      { name:'Pneumonia', complaint:'High fever, productive cough, chest pain' },
+      { name:'Asthma', complaint:'Shortness of breath, wheezing, cough' },
+      { name:'Hypertension', complaint:'Headache, dizziness, high blood pressure' },
+      { name:'Type 2 Diabetes Mellitus', complaint:'Thirst, frequent urination, fatigue' },
+      { name:'Gastritis / GERD', complaint:'Epigastric pain, heartburn, nausea' },
+      { name:'Peptic Ulcer Disease', complaint:'Epigastric pain, bloating, nausea' },
+      { name:'IBS', complaint:'Abdominal pain, bloating, altered bowel habits' },
+      { name:'Acute Gastroenteritis', complaint:'Vomiting, diarrhea, abdominal cramps' },
+      { name:'Typhoid Fever', complaint:'Prolonged fever, headache, abdominal pain' },
+      { name:'Urinary Tract Infection', complaint:'Burning urination, frequency, urgency' },
+      { name:'Anemia', complaint:'Weakness, fatigue, pallor, breathlessness' },
+      { name:'Migraine', complaint:'Severe headache, nausea, light sensitivity' },
+      { name:'Tension Headache', complaint:'Bilateral headache, stress, neck pain' },
+      { name:'Allergic Rhinitis', complaint:'Sneezing, runny nose, nasal congestion' },
+      { name:'Skin Infection / Cellulitis', complaint:'Redness, swelling, warmth, pain' },
+      { name:'Conjunctivitis', complaint:'Red eyes, discharge, itching' },
+      { name:'Otitis Media', complaint:'Ear pain, hearing loss, fever' },
+      { name:'Anxiety Disorder', complaint:'Palpitation, restlessness, excessive worry' },
+      { name:'Osteoarthritis', complaint:'Joint pain, stiffness, restricted movement' },
+      { name:'Acute Diarrhea', complaint:'Loose stools, abdominal cramps, dehydration' },
+    ];
+
+    const adviceChips = [
+      'Take rest at home',
+      'Drink plenty of water and fluids',
+      'Avoid cold food and drinks',
+      'Eat light, easily digestible food',
+      'Avoid spicy and oily food',
+      'Complete the full course of antibiotics',
+      'Monitor blood pressure daily',
+      'Check blood sugar regularly',
+      'Avoid stress and get adequate sleep',
+      'Walk 30 minutes daily',
+      'Low salt diet',
+      'Low sugar diet',
+      'Avoid alcohol and smoking',
+      'Steam inhalation twice daily',
+      'Warm saline gargle twice daily',
+      'Apply warm compress',
+      'Keep wound clean and dry',
+      'Come back if fever persists beyond 3 days',
+      'Emergency visit if breathing difficulty',
+      'Avoid driving while on medication',
+    ];
+
+    const followUpOptions = computed(() => {
+      const today = new Date();
+      return [
+        { label:'3 Days',  days:3  },
+        { label:'5 Days',  days:5  },
+        { label:'1 Week',  days:7  },
+        { label:'2 Weeks', days:14 },
+        { label:'1 Month', days:30 },
+        { label:'3 Months',days:90 },
+      ].map(f => {
+        const d = new Date(today);
+        d.setDate(d.getDate() + f.days);
+        return { ...f, date: d.toISOString().split('T')[0] };
+      });
+    });
+
+    // Diagnosis search
+    const dxResults = ref([]);
+    let dxTimer;
+    function searchDiagnosis() {
+      clearTimeout(dxTimer);
+      const q = rxForm.value.diagnosis.toLowerCase().trim();
+      if (!q || q.length < 2) { dxResults.value = []; return; }
+      dxTimer = setTimeout(() => {
+        dxResults.value = commonDiagnoses.filter(d =>
+          d.name.toLowerCase().includes(q)
+        ).slice(0, 8);
+      }, 200);
+    }
+    function closeDxDropdown() {
+      setTimeout(() => { dxResults.value = []; }, 200);
+    }
+    function selectDiagnosis(d) {
+      rxForm.value.diagnosis = d.name;
+      if (d.complaint && !rxForm.value.chief_complaint) {
+        rxForm.value.chief_complaint = d.complaint;
+      }
+      dxResults.value = [];
+    }
+
+    // Complaint tag toggle
+    function toggleComplaint(tag) {
+      const current = rxForm.value.chief_complaint;
+      if (current.includes(tag)) {
+        rxForm.value.chief_complaint = current.replace(tag, '').replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '').trim();
+      } else {
+        rxForm.value.chief_complaint = current ? current + ', ' + tag : tag;
+      }
+    }
+
+    // Advice chip toggle
+    function toggleAdvice(chip) {
+      const current = rxForm.value.advice;
+      if (current.includes(chip)) {
+        rxForm.value.advice = current.replace(chip + '. ', '').replace(chip, '').trim();
+      } else {
+        rxForm.value.advice = current ? current + (current.endsWith('.') ? ' ' : '. ') + chip : chip;
+      }
+    }
+
+    // Follow-up quick set
+    function setFollowUp(days) {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      rxForm.value.follow_up_date = d.toISOString().split('T')[0];
+    }
+
+    // Fill all normal vitals in one click
+    function fillNormalVitals() {
+      rxForm.value.blood_pressure = '120/80 mmHg';
+      rxForm.value.pulse = '72 bpm';
+      rxForm.value.temperature = '98.6°F';
+    }
 
     // ---- COMPUTED ----
     const pageTitle = computed(() => {
@@ -1882,12 +2137,7 @@ createApp({
         throw new Error(msg);
       }
       if (res.status === 204) return null;
-      const contentType = res.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return res.json();
-      }
-      const text = await res.text();
-      throw new Error(`Server returned non-JSON response: ${text.slice(0, 100)}`);
+      return res.json();
     }
 
     function toast(message, type='success') {
@@ -1900,12 +2150,8 @@ createApp({
     async function fetchMe() {
       try {
         const data = await api('GET', 'auth/me/');
-        if (data && data.role) {
-          me.value = data;
-          return true;
-        }
-        clearTokens();
-        return false;
+        me.value = data;
+        return true;
       } catch {
         clearTokens();
         return false;
@@ -1937,7 +2183,7 @@ createApp({
         await bootstrapAfterLogin();
         toast(`Welcome back, ${me.value.display_name}!`);
       } catch (e) {
-        authError.value = e.message || 'Could not reach the server. Is the backend running?';
+        authError.value = 'Could not reach the server. Is the backend running?';
       }
       authBusy.value = false;
     }
@@ -1968,33 +2214,12 @@ createApp({
           authBusy.value = false;
           return;
         }
-        // Registration succeeded — try auto-login with token
-        if (data.access && data.refresh) {
-          persistTokens(data.access, data.refresh);
-          const meOk = await fetchMe();
-          if (meOk) {
-            toast(`Welcome to RxManager, Dr. ${data.doctor_name}!`);
-            await bootstrapAfterLogin();
-          } else {
-            // fetchMe failed — just go to login screen
-            authScreen.value = 'login';
-            loginForm.value.username = f.username;
-            authError.value = '';
-            toast('Account created! Please sign in.');
-          }
-        } else {
-          // No token in response — go to login
-          authScreen.value = 'login';
-          loginForm.value.username = f.username;
-          authError.value = '';
-          toast('Account created! Please sign in.');
-        }
+        persistTokens(data.access, data.refresh);
+        await fetchMe();
+        toast(`Welcome to RxManager, Dr. ${data.doctor_name}!`);
+        await bootstrapAfterLogin();
       } catch (e) {
-        // If anything crashes, still go to login — account may have been created
-        authScreen.value = 'login';
-        loginForm.value.username = f.username;
-        authError.value = '';
-        toast('Account created! Please sign in now.');
+        authError.value = 'Could not reach the server. Is the backend running?';
       }
       authBusy.value = false;
     }
@@ -2598,6 +2823,10 @@ createApp({
       loadAssistants, openAssistantModal, saveAssistant, toggleAssistantActive,
       showResetPwModal, resetPwTarget, resetPwValue, openResetPwModal, submitResetPw,
       // existing app state
+      // smart quick-fill
+      complaintTags, commonDiagnoses, adviceChips, followUpOptions,
+      dxResults, searchDiagnosis, closeDxDropdown, selectDiagnosis,
+      toggleComplaint, toggleAdvice, setFollowUp, fillNormalVitals,
       sidebarCollapsed, currentPage, prevPage, saving, toasts, pageTitle,
       doctor, doctorForm, saveDoctor,
       stats, loadDashboard,
