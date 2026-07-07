@@ -1288,14 +1288,14 @@ tr:hover td { background: rgba(0,180,166,0.03); }
             </div>
           </div>
 
-          <!-- COMPLAINT & DIAGNOSIS -->
+          <!-- CC / HISTORY / INVESTIGATION / DIAGNOSIS -->
           <div class="card" style="margin-bottom:16px">
-            <div class="card-title" style="margin-bottom:14px"><i class="fa-solid fa-stethoscope"></i> Clinical Notes</div>
+            <div class="card-title" style="margin-bottom:16px"><i class="fa-solid fa-stethoscope"></i> Clinical Notes</div>
 
-            <!-- Chief Complaint with quick tags -->
+            <!-- 1. CHIEF COMPLAINT -->
             <div class="form-group">
-              <label class="form-label" style="display:flex;justify-content:space-between">
-                <span>Chief Complaint</span>
+              <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+                <span><span style="color:var(--teal);font-weight:700">CC</span> — Chief Complaint</span>
                 <span style="font-size:0.72rem;color:var(--muted)">Click tags to add</span>
               </label>
               <div class="quick-tags" style="margin-bottom:6px">
@@ -1303,17 +1303,58 @@ tr:hover td { background: rgba(0,180,166,0.03); }
                   :class="{active: rxForm.chief_complaint.includes(c)}"
                   @click="toggleComplaint(c)">{{c}}</button>
               </div>
-              <textarea class="form-control" v-model="rxForm.chief_complaint" placeholder="Click tags above or type here..." rows="2"></textarea>
+              <textarea class="form-control" v-model="rxForm.chief_complaint"
+                placeholder="Click tags above or type complaints here..." rows="2"></textarea>
             </div>
 
-            <!-- Diagnosis with search -->
+            <!-- DIVIDER -->
+            <div style="border-top:1px solid var(--border);margin:14px 0"></div>
+
+            <!-- 2. HISTORY -->
             <div class="form-group">
-              <label class="form-label required" style="display:flex;justify-content:space-between">
-                <span>Diagnosis</span>
+              <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+                <span><span style="color:var(--gold);font-weight:700">H/O</span> — History</span>
+                <span style="font-size:0.72rem;color:var(--muted)">Click to add</span>
+              </label>
+              <div class="quick-tags" style="margin-bottom:6px">
+                <button class="quick-tag gold" v-for="h in historyTags" :key="h"
+                  :class="{active: rxForm.history.includes(h)}"
+                  @click="toggleHistory(h)">{{h}}</button>
+              </div>
+              <textarea class="form-control" v-model="rxForm.history"
+                placeholder="Past medical history, surgical history, drug history, family history..." rows="2"></textarea>
+            </div>
+
+            <!-- DIVIDER -->
+            <div style="border-top:1px solid var(--border);margin:14px 0"></div>
+
+            <!-- 3. INVESTIGATION -->
+            <div class="form-group">
+              <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+                <span><span style="color:#8B5CF6;font-weight:700">Ix</span> — Investigation / Findings</span>
+                <span style="font-size:0.72rem;color:var(--muted)">Click to add</span>
+              </label>
+              <div class="quick-tags" style="margin-bottom:6px">
+                <button class="quick-tag" style="border-color:rgba(139,92,246,0.3);color:#8B5CF6"
+                  v-for="i in investigationTags" :key="i"
+                  :class="{active: rxForm.investigation.includes(i)}"
+                  @click="toggleInvestigation(i)">{{i}}</button>
+              </div>
+              <textarea class="form-control" v-model="rxForm.investigation"
+                placeholder="Lab results, imaging findings, examination findings..." rows="2"></textarea>
+            </div>
+
+            <!-- DIVIDER -->
+            <div style="border-top:1px solid var(--border);margin:14px 0"></div>
+
+            <!-- 4. DIAGNOSIS -->
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label required" style="display:flex;align-items:center;justify-content:space-between">
+                <span><span style="color:var(--danger);font-weight:700">Dx</span> — Diagnosis</span>
                 <span style="font-size:0.72rem;color:var(--muted)">Type or click common diagnoses</span>
               </label>
               <div class="quick-tags" style="margin-bottom:6px">
-                <button class="quick-tag" v-for="d in commonDiagnoses.slice(0,8)" :key="d.name"
+                <button class="quick-tag" v-for="d in commonDiagnoses.slice(0,10)" :key="d.name"
                   :class="{active: rxForm.diagnosis===d.name}"
                   @click="selectDiagnosis(d)">{{d.name}}</button>
               </div>
@@ -1326,11 +1367,12 @@ tr:hover td { background: rgba(0,180,166,0.03); }
                 <div class="dx-dropdown" v-if="dxResults.length">
                   <div class="dx-item" v-for="d in dxResults" :key="d.name" @mousedown="selectDiagnosis(d)">
                     <div>{{d.name}}</div>
-                    <div class="dx-sub" v-if="d.complaint">Typical complaint: {{d.complaint}}</div>
+                    <div class="dx-sub" v-if="d.complaint">Typical: {{d.complaint}}</div>
                   </div>
                 </div>
               </div>
             </div>
+
           </div>
 
           <!-- MEDICINES -->
@@ -1774,15 +1816,25 @@ tr:hover td { background: rgba(0,180,166,0.03); }
                   <div class="rx-vital-item" v-if="printData.prescription.temperature"><span class="rx-vital-label">Temp:</span><span class="rx-vital-value">{{printData.prescription.temperature}}</span></div>
                   <div class="rx-vital-item" v-if="printData.prescription.weight"><span class="rx-vital-label">Wt:</span><span class="rx-vital-value">{{printData.prescription.weight}}</span></div>
                 </div>
-                <!-- Complaint -->
+                <!-- CC -->
                 <div class="rx-dx" v-if="printData.prescription.chief_complaint">
-                  <div class="rx-section-title">Chief Complaint</div>
+                  <div class="rx-section-title">CC — Chief Complaint</div>
                   <p>{{printData.prescription.chief_complaint}}</p>
+                </div>
+                <!-- History -->
+                <div class="rx-dx" v-if="printData.prescription.history">
+                  <div class="rx-section-title">H/O — History</div>
+                  <p>{{printData.prescription.history}}</p>
+                </div>
+                <!-- Investigation -->
+                <div class="rx-dx" v-if="printData.prescription.investigation">
+                  <div class="rx-section-title">Ix — Investigation / Findings</div>
+                  <p>{{printData.prescription.investigation}}</p>
                 </div>
                 <!-- Diagnosis -->
                 <div class="rx-dx">
-                  <div class="rx-section-title">Diagnosis</div>
-                  <p>{{printData.prescription.diagnosis}}</p>
+                  <div class="rx-section-title">Dx — Diagnosis</div>
+                  <p style="font-weight:700">{{printData.prescription.diagnosis}}</p>
                 </div>
                 <!-- Medicines -->
                 <div class="rx-medicines">
@@ -1838,7 +1890,7 @@ tr:hover td { background: rgba(0,180,166,0.03); }
 </div>
 
 <script>
-const API = 'https://rxmanager-pro-production.up.railway.app/api';
+const API = 'http://localhost:8000/api';
 
 const {createApp, ref, computed, onMounted, watch} = Vue;
 
@@ -1894,7 +1946,7 @@ createApp({
       patient: null, patient_name:'', patient_id_no:'', patient_age:'', patient_gender:'', patient_blood:'', patient_allergies:'',
       visit_date: new Date().toISOString().split('T')[0],
       blood_pressure:'', temperature:'', pulse:'', weight:'',
-      chief_complaint:'', diagnosis:'', advice:'', follow_up_date:'', notes:'',
+      chief_complaint:'', history:'', investigation:'', diagnosis:'', advice:'', follow_up_date:'', notes:'',
       medicines:[],
       saveAsTemplate: false, templateName:'', templateDisease:'',
     });
@@ -1925,6 +1977,33 @@ createApp({
       'Abdominal Pain','Back Pain','Joint Pain','Dizziness','Fatigue',
       'Loss of Appetite','Weakness','Skin Rash','Eye Problem','Ear Pain',
       'Toothache','Leg Swelling','Palpitation','Burning Urination',
+    ];
+
+    const historyTags = [
+      'No significant past history',
+      'Hypertension','Diabetes Mellitus','Asthma','COPD',
+      'Ischemic Heart Disease','Previous MI','Heart Failure',
+      'Thyroid Disease','CKD','Liver Disease',
+      'Previous Surgery','Tuberculosis',
+      'H/O similar complaints before',
+      'Drug allergy: Penicillin','Drug allergy: Sulfa',
+      'Family H/O Diabetes','Family H/O Hypertension','Family H/O Cancer',
+      'Smoker','Ex-smoker','Non-smoker',
+      'Alcoholic','Non-alcoholic',
+    ];
+
+    const investigationTags = [
+      'CBC — Normal','CBC — Leucocytosis','CBC — Anaemia',
+      'Blood Sugar — Normal','Blood Sugar — Elevated','HbA1c — Done',
+      'Urine R/E — Normal','Urine R/E — Infection',
+      'Chest X-Ray — Normal','Chest X-Ray — Done',
+      'ECG — Normal','ECG — Done',
+      'LFT — Normal','RFT — Normal',
+      'Thyroid — Normal','Lipid Profile — Done',
+      'USG Abdomen — Normal','USG Abdomen — Done',
+      'Malaria — Negative','Typhoid — Negative',
+      'Dengue NS1 — Negative','Dengue NS1 — Positive',
+      'Sputum AFB — Negative','Widal — Done',
     ];
 
     const commonDiagnoses = [
@@ -2018,15 +2097,20 @@ createApp({
       dxResults.value = [];
     }
 
-    // Complaint tag toggle
-    function toggleComplaint(tag) {
-      const current = rxForm.value.chief_complaint;
+    // Generic field tag toggle helper
+    function toggleField(field, tag) {
+      const current = rxForm.value[field];
       if (current.includes(tag)) {
-        rxForm.value.chief_complaint = current.replace(tag, '').replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '').trim();
+        let updated = current.replace(tag, '');
+        updated = updated.replace(/,\s*,/g, ',').replace(/\.\s*\./g, '.').replace(/^[,\.\s]+|[,\.\s]+$/g, '').trim();
+        rxForm.value[field] = updated;
       } else {
-        rxForm.value.chief_complaint = current ? current + ', ' + tag : tag;
+        rxForm.value[field] = current ? current + ', ' + tag : tag;
       }
     }
+    function toggleComplaint(tag) { toggleField('chief_complaint', tag); }
+    function toggleHistory(tag)    { toggleField('history', tag); }
+    function toggleInvestigation(tag) { toggleField('investigation', tag); }
 
     // Advice chip toggle
     function toggleAdvice(chip) {
@@ -2434,7 +2518,7 @@ createApp({
         patient: null, patient_name:'', patient_id_no:'', patient_age:'', patient_gender:'', patient_blood:'', patient_allergies:'',
         visit_date: new Date().toISOString().split('T')[0],
         blood_pressure:'', temperature:'', pulse:'', weight:'',
-        chief_complaint:'', diagnosis:'', advice:'', follow_up_date:'', notes:'',
+        chief_complaint:'', history:'', investigation:'', diagnosis:'', advice:'', follow_up_date:'', notes:'',
         medicines:[],
         saveAsTemplate: false, templateName:'', templateDisease:'',
       };
@@ -2491,6 +2575,8 @@ createApp({
     function loadTemplate(t) {
       loadedTemplateId.value = t.id;
       rxForm.value.chief_complaint = t.chief_complaint || rxForm.value.chief_complaint;
+      rxForm.value.history = t.history || rxForm.value.history;
+      rxForm.value.investigation = t.investigation || rxForm.value.investigation;
       rxForm.value.diagnosis = t.diagnosis || rxForm.value.diagnosis;
       rxForm.value.advice = t.advice || rxForm.value.advice;
       if (t.follow_up_days) {
@@ -2555,6 +2641,8 @@ createApp({
             name: rxForm.value.templateName,
             disease: rxForm.value.templateDisease,
             chief_complaint: rxForm.value.chief_complaint,
+            history: rxForm.value.history,
+            investigation: rxForm.value.investigation,
             diagnosis: rxForm.value.diagnosis,
             advice: rxForm.value.advice,
             follow_up_days: 7,
@@ -2575,6 +2663,8 @@ createApp({
           pulse: rxForm.value.pulse,
           weight: rxForm.value.weight,
           chief_complaint: rxForm.value.chief_complaint,
+          history: rxForm.value.history,
+          investigation: rxForm.value.investigation,
           diagnosis: rxForm.value.diagnosis,
           advice: rxForm.value.advice,
           follow_up_date: rxForm.value.follow_up_date || null,
@@ -2824,9 +2914,9 @@ createApp({
       showResetPwModal, resetPwTarget, resetPwValue, openResetPwModal, submitResetPw,
       // existing app state
       // smart quick-fill
-      complaintTags, commonDiagnoses, adviceChips, followUpOptions,
+      complaintTags, historyTags, investigationTags, commonDiagnoses, adviceChips, followUpOptions,
       dxResults, searchDiagnosis, closeDxDropdown, selectDiagnosis,
-      toggleComplaint, toggleAdvice, setFollowUp, fillNormalVitals,
+      toggleComplaint, toggleHistory, toggleInvestigation, toggleAdvice, setFollowUp, fillNormalVitals,
       sidebarCollapsed, currentPage, prevPage, saving, toasts, pageTitle,
       doctor, doctorForm, saveDoctor,
       stats, loadDashboard,
